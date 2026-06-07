@@ -14,7 +14,7 @@ CORS(app)
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 ADMIN_KEY = os.environ.get("ADMIN_KEY", "xauelite2024")
-ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY")
+GEMINI_KEY = os.environ.get("GEMINI_KEY")
 FINNHUB_KEY = os.environ.get("FINNHUB_KEY", "d8ie1s9r01qm63bbl4qgd8ie1s9r01qm63bbl4r0")
 TZ_OFFSET = 8  # 台灣時間 UTC+8
 
@@ -99,9 +99,8 @@ def fetch_gold_news():
 # ─── Claude API 生成分析 ────────────────────────────────────
 
 def generate_analysis_with_claude(price, change, change_pct, eco_events, news):
-    if not ANTHROPIC_KEY:
+    if not GEMINI_KEY:
         return generate_fallback_analysis(price, change)
-
     eco_text = "\n".join([f"- {e.get('event','')}: 實際 {e.get('actual','—')} 預期 {e.get('estimate','—')} 前值 {e.get('prev','—')}" for e in eco_events]) or "今日無重大數據"
     news_text = "\n".join([f"- {n.get('headline','')}" for n in news]) or "暫無重大新聞"
 
@@ -118,11 +117,11 @@ def generate_analysis_with_claude(price, change, change_pct, eco_events, news):
 【最新市場新聞】
 {news_text}
 
-請生成以下四個部分的分析，格式為 JSON：
+請生成以下分析，格式為 JSON，只回傳 JSON 不要其他文字：
 
 {{
-  "direction": "bullish" 或 "bearish" 或 "neutral",
-  "direction_text": "多方偏向 BULLISH" 或 "空方偏向 BEARISH" 或 "多空觀望 NEUTRAL",
+  "direction": "bullish 或 bearish 或 neutral",
+  "direction_text": "多方偏向 BULLISH 或 空方偏向 BEARISH 或 多空觀望 NEUTRAL",
   "bias_summary": "一句話說明今日偏向（約50字）",
   "bias_points": [
     "重點1（約30字，說明整體方向）",
@@ -133,33 +132,21 @@ def generate_analysis_with_claude(price, change, change_pct, eco_events, news):
   "macro_analysis": "總經背景分析（約150字，包含Fed政策、美元走勢、技術面總結）"
 }}
 
-注意：
-- 只回傳 JSON，不要其他文字
-- 繁體中文
-- 分析要具體且專業
-- 技術面結合破框 SOP 邏輯（突破→回測→第三根進場）"""
+注意：繁體中文，分析具體專業，技術面結合破框SOP邏輯。"""
 
     try:
         res = requests.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": ANTHROPIC_KEY,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json"
-            },
-            json={
-                "model": "claude-sonnet-4-20250514",
-                "max_tokens": 1000,
-                "messages": [{"role": "user", "content": prompt}]
-            },
+            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}",
+            headers={"Content-Type": "application/json"},
+            json={"contents": [{"parts": [{"text": prompt}]}]},
             timeout=30
         )
         data = res.json()
-        text = data['content'][0]['text']
+        text = data['candidates'][0]['content']['parts'][0]['text']
         text = text.replace('```json','').replace('```','').strip()
         return json.loads(text)
     except Exception as e:
-        print(f"Claude API 錯誤: {e}")
+        print(f"Gemini API 錯誤: {e}")
         return generate_fallback_analysis(price, change)
 
 def generate_fallback_analysis(price, change):
