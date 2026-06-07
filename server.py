@@ -8,14 +8,15 @@ import json
 from datetime import datetime, timedelta
 import threading
 import time
+from anthropic import Anthropic
 
 app = Flask(__name__)
 CORS(app)
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 ADMIN_KEY = os.environ.get("ADMIN_KEY", "xauelite2024")
-GEMINI_KEY = os.environ.get("GEMINI_KEY")
-FINNHUB_KEY = os.environ.get("FINNHUB_KEY", "d8ie1s9r01qm63bbl4qgd8ie1s9r01qm63bbl4r0")
+ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY")
+FINNHUB_KEY = os.environ.get("FINNHUB_KEY")
 TZ_OFFSET = 8  # 台灣時間 UTC+8
 
 def get_db():
@@ -99,7 +100,7 @@ def fetch_gold_news():
 # ─── Claude API 生成分析 ────────────────────────────────────
 
 def generate_analysis_with_claude(price, change, change_pct, eco_events, news):
-    if not GEMINI_KEY:
+    if not ANTHROPIC_KEY:
         return generate_fallback_analysis(price, change)
     eco_text = "\n".join([f"- {e.get('event','')}: 實際 {e.get('actual','—')} 預期 {e.get('estimate','—')} 前值 {e.get('prev','—')}" for e in eco_events]) or "今日無重大數據"
     news_text = "\n".join([f"- {n.get('headline','')}" for n in news]) or "暫無重大新聞"
@@ -135,18 +136,18 @@ def generate_analysis_with_claude(price, change, change_pct, eco_events, news):
 注意：繁體中文，分析具體專業，技術面結合破框SOP邏輯。"""
 
     try:
-        res = requests.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}",
-            headers={"Content-Type": "application/json"},
-            json={"contents": [{"parts": [{"text": prompt}]}]},
-            timeout=30
+        client = Anthropic(api_key=ANTHROPIC_KEY)
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1500,
+            system="你只能回傳純 JSON 物件，不要任何說明文字，不要 markdown 標記（不要 ```）。",
+            messages=[{"role": "user", "content": prompt}]
         )
-        data = res.json()
-        text = data['candidates'][0]['content']['parts'][0]['text']
-        text = text.replace('```json','').replace('```','').strip()
+        text = msg.content[0].text
+        text = text.replace('```json', '').replace('```', '').strip()
         return json.loads(text)
     except Exception as e:
-        print(f"Gemini API 錯誤: {e}")
+        print(f"Claude API 錯誤: {e}")
         return generate_fallback_analysis(price, change)
 
 def generate_fallback_analysis(price, change):
@@ -240,9 +241,21 @@ scheduler_thread.start()
 def index():
     return send_from_directory('.', 'index.html')
 
-@app.route('/<path:path>')
-def serve_file(path):
-    return send_from_directory('.', path)
+# Claude 連線測試（不需權限，測完可刪）
+@app.route('/api/test-claude')
+def test_claude():
+    if not ANTHROPIC_KEY:
+        return jsonify({"ok": False, "error": "找不到 ANTHROPIC_API_KEY 環境變數"}), 500
+    try:
+        client = Anthropic(api_key=ANTHROPIC_KEY)
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=100,
+            messages=[{"role": "user", "content": "請用繁體中文回一句話：Claude 連線測試成功"}]
+        )
+        return jsonify({"ok": True, "reply": msg.content[0].text})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 # 手動觸發生成分析（後台用）
 @app.route('/api/generate_analysis', methods=['POST'])
@@ -354,6 +367,10 @@ def update_application(app_id):
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route('/<path:path>')
+def serve_file(path):
+    return send_from_directory('.', path)
 
 @app.route('/health')
 def health():
