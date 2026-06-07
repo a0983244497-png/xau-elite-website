@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XAU Elite | 破框分析工具</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #c9a84c;
+  --gold-dim: rgba(201,168,76,0.15);
+  --bg: #080b12;
+  --bg2: #0d1220;
+  --bg3: #111827;
+  --border: rgba(201,168,76,0.2);
+  --text: #e8eaf0;
+  --text-dim: #6b7a99;
+  --green: #34d399;
+  --red: #f87171;
+  --yellow: #fbbf24;
+  --purple: #a78bfa;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans TC', sans-serif; min-height: 100vh; }
+
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(8,11,18,0.9); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 40px; height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.nav-logo { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--gold); text-decoration: none; letter-spacing: 2px; }
+.nav-back { padding: 7px 16px; background: var(--gold-dim); border: 1px solid var(--border); border-radius: 8px; color: var(--gold); font-size: 12px; text-decoration: none; }
+
+.container { max-width: 900px; margin: 0 auto; padding: 100px 24px 60px; }
+
+.page-title { font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 700; color: #f0f4ff; margin-bottom: 8px; }
+.page-sub { font-size: 14px; color: var(--text-dim); margin-bottom: 40px; line-height: 1.6; }
+
+.tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+.card-title { font-size: 11px; font-weight: 600; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; font-family: 'IBM Plex Mono', monospace; }
+
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 6px; font-family: 'IBM Plex Mono', monospace; }
+.form-group input { width: 100%; background: var(--bg3); border: 1px solid rgba(201,168,76,0.15); border-radius: 8px; padding: 10px 14px; font-size: 14px; font-family: 'IBM Plex Mono', monospace; color: var(--text); outline: none; transition: border-color 0.2s; }
+.form-group input:focus { border-color: var(--gold); }
+
+.analyze-btn {
+  width: 100%; padding: 15px;
+  background: linear-gradient(135deg, var(--gold), #a07830);
+  border: none; border-radius: 12px;
+  color: #080b12; font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: 'Noto Sans TC', sans-serif;
+  margin-bottom: 24px; transition: opacity 0.2s;
+}
+.analyze-btn:hover { opacity: 0.85; }
+
+/* RESULT */
+.result-card { display: none; background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 24px; }
+
+.result-header { padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; }
+.result-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; }
+.direction-badge { padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
+.badge-long { background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.3); color: var(--green); }
+.badge-short { background: rgba(248,113,113,0.15); border: 1px solid rgba(248,113,113,0.3); color: var(--red); }
+.badge-watch { background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3); color: var(--yellow); }
+
+.result-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+.result-item { padding: 16px 20px; border-right: 1px solid rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.04); }
+.result-item:nth-child(4n) { border-right: none; }
+.result-label { font-size: 10px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+.result-val { font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; }
+.val-green { color: var(--green); }
+.val-red { color: var(--red); }
+.val-gold { color: var(--gold); }
+.val-purple { color: var(--purple); }
+
+/* SOP */
+.sop-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 24px; display: none; }
+.sop-title { font-size: 11px; font-weight: 600; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 16px; font-family: 'IBM Plex Mono', monospace; }
+.sop-steps { display: flex; flex-direction: column; gap: 10px; }
+.sop-step { display: flex; gap: 14px; align-items: flex-start; padding: 12px 16px; background: var(--bg3); border-radius: 10px; border: 1px solid rgba(255,255,255,0.04); }
+.step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--gold-dim); border: 1px solid var(--border); color: var(--gold); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'IBM Plex Mono', monospace; }
+.step-content { flex: 1; }
+.step-name { font-size: 13px; font-weight: 600; color: #f0f4ff; margin-bottom: 3px; }
+.step-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+.step-val { font-family: 'IBM Plex Mono', monospace; color: var(--gold); font-size: 12px; margin-top: 3px; }
+
+/* ANALYSIS TEXT */
+.analysis-section { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 24px; display: none; }
+.analysis-text { font-size: 14px; line-height: 1.9; color: #b0b8cc; }
+.analysis-text .highlight { color: var(--gold); font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
+.analysis-text .up { color: var(--green); font-weight: 600; }
+.analysis-text .down { color: var(--red); font-weight: 600; }
+
+/* NOT DO */
+.not-do { background: rgba(248,113,113,0.06); border: 1px solid rgba(248,113,113,0.15); border-radius: 10px; padding: 14px 16px; margin-top: 16px; }
+.not-do-title { font-size: 11px; font-weight: 700; color: var(--red); font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; margin-bottom: 8px; }
+.not-do-item { font-size: 12px; color: #fca5a5; line-height: 1.7; }
+
+/* DISCLAIMER */
+.disclaimer { text-align: center; font-size: 11px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; margin-top: 24px; line-height: 1.6; }
+
+@media (max-width: 768px) {
+  nav { padding: 0 20px; }
+  .container { padding: 90px 16px 40px; }
+  .tool-grid { grid-template-columns: 1fr; }
+  .result-grid { grid-template-columns: repeat(2, 1fr); }
+  .page-title { font-size: 26px; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">XAU ELITE</a>
+  <a href="/" class="nav-back">← 返回首頁</a>
+</nav>
+
+<div class="container">
+  <div class="page-title">破框分析工具</div>
+  <p class="page-sub">輸入當前黃金行情的關鍵撐壓位，系統將依照多時區結構分析邏輯，自動判斷方向、計算進場參數與 SOP 流程。</p>
+
+  <div class="tool-grid">
+    <!-- 左側輸入 -->
+    <div class="card">
+      <div class="card-title">📊 行情數據輸入</div>
+      <div class="form-group">
+        <label>當前價格 Current Price</label>
+        <input type="number" id="currentPrice" placeholder="例：4485.5" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>240 Pivot High（上方大壓）</label>
+        <input type="number" id="h240High" placeholder="例：4541.6" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>240 Pivot Low（下方大撐）</label>
+        <input type="number" id="h240Low" placeholder="例：4447.6" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>15 Pivot High（H1 壓力）</label>
+        <input type="number" id="h15High" placeholder="例：4508.7" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>15 Pivot Low（H1 支撐）</label>
+        <input type="number" id="h15Low" placeholder="例：4463.0" step="0.1">
+      </div>
+    </div>
+
+    <!-- 右側輸入 -->
+    <div class="card">
+      <div class="card-title">🎯 M15 執行參數</div>
+      <div class="form-group">
+        <label>M15 突破關鍵位（進場觸發）</label>
+        <input type="number" id="m15Key" placeholder="例：4496.7" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>M15 區間高點</label>
+        <input type="number" id="m15High" placeholder="例：4496.7" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>M15 區間低點</label>
+        <input type="number" id="m15Low" placeholder="例：4462.8" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>方向偏向</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;">
+          <div id="dirLong" onclick="selectDir('long')" style="padding:10px;border-radius:8px;border:1px solid rgba(52,211,153,0.4);background:rgba(52,211,153,0.15);color:#34d399;font-size:13px;font-weight:600;cursor:pointer;text-align:center;">▲ 多單</div>
+          <div id="dirShort" onclick="selectDir('short')" style="padding:10px;border-radius:8px;border:1px solid #232b3e;background:#111827;color:#6b7a99;font-size:13px;font-weight:600;cursor:pointer;text-align:center;">▼ 空單</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="analyze-btn" onclick="analyze()">🔍 開始破框分析</button>
+
+  <!-- 結果 -->
+  <div class="result-card" id="resultCard">
+    <div class="result-header">
+      <div class="result-title" id="resultTitle">XAU/USD 分析結果</div>
+      <div class="direction-badge badge-long" id="resultBadge">多方偏向</div>
+    </div>
+    <div class="result-grid">
+      <div class="result-item">
+        <div class="result-label">進場觸發位</div>
+        <div class="result-val val-gold" id="resEntry">—</div>
+      </div>
+      <div class="result-item">
+        <div class="result-label">停損基準</div>
+        <div class="result-val val-red" id="resSL">—</div>
+      </div>
+      <div class="result-item">
+        <div class="result-label">TP1 目標</div>
+        <div class="result-val val-green" id="resTP1">—</div>
+      </div>
+      <div class="result-item">
+        <div class="result-label">TP2 目標</div>
+        <div class="result-val val-purple" id="resTP2">—</div>
+      </div>
+      <div class="result-item">
+        <div class="result-label">M15 區間距離</div>
+        <div class="result-val val-gold" id="resRange">—</div>
+      </div>
+      <div class="result-item">
+        <div class="result-label">上方大壓</div>
+        <div class="result-val" id="resRes">—</div>
+      </div>
+      <div class="result-item">
+        <div class="result-label">下方大撐</div>
+        <div class="result-val" id="resSup">—</div>
+      </div>
+      <div class="result-item">
+        <div class="result-label">風報比</div>
+        <div class="result-val val-gold" id="resRR">1:1</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOP -->
+  <div class="sop-card" id="sopCard">
+    <div class="sop-title">📋 進場 SOP 流程</div>
+    <div class="sop-steps" id="sopSteps"></div>
+  </div>
+
+  <!-- 分析文字 -->
+  <div class="analysis-section" id="analysisSection">
+    <div class="card-title" style="margin-bottom:16px;">💡 結構分析說明</div>
+    <div class="analysis-text" id="analysisText"></div>
+    <div class="not-do" id="notDoSection">
+      <div class="not-do-title">⚠️ 不做單的條件</div>
+      <div class="not-do-item" id="notDoText"></div>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    ⚠️ 本工具僅供教育用途，分析結果不構成投資建議。<br>
+    實際交易請結合自身風控，單筆虧損控制帳戶 1%～3% 以內。
+  </div>
+</div>
+
+<script>
+let direction = 'long';
+
+function selectDir(d) {
+  direction = d;
+  document.getElementById('dirLong').style.cssText = d === 'long'
+    ? 'padding:10px;border-radius:8px;border:1px solid rgba(52,211,153,0.4);background:rgba(52,211,153,0.15);color:#34d399;font-size:13px;font-weight:600;cursor:pointer;text-align:center;'
+    : 'padding:10px;border-radius:8px;border:1px solid #232b3e;background:#111827;color:#6b7a99;font-size:13px;font-weight:600;cursor:pointer;text-align:center;';
+  document.getElementById('dirShort').style.cssText = d === 'short'
+    ? 'padding:10px;border-radius:8px;border:1px solid rgba(248,113,113,0.4);background:rgba(248,113,113,0.15);color:#f87171;font-size:13px;font-weight:600;cursor:pointer;text-align:center;'
+    : 'padding:10px;border-radius:8px;border:1px solid #232b3e;background:#111827;color:#6b7a99;font-size:13px;font-weight:600;cursor:pointer;text-align:center;';
+}
+
+function analyze() {
+  const price = parseFloat(document.getElementById('currentPrice').value);
+  const h240High = parseFloat(document.getElementById('h240High').value);
+  const h240Low = parseFloat(document.getElementById('h240Low').value);
+  const h15High = parseFloat(document.getElementById('h15High').value);
+  const h15Low = parseFloat(document.getElementById('h15Low').value);
+  const m15Key = parseFloat(document.getElementById('m15Key').value);
+  const m15High = parseFloat(document.getElementById('m15High').value);
+  const m15Low = parseFloat(document.getElementById('m15Low').value);
+
+  if (!price || !h240High || !h240Low || !m15High || !m15Low) {
+    alert('請填入當前價格、240撐壓位及M15區間！');
+    return;
+  }
+
+  const range = Math.abs(m15High - m15Low);
+  let entry, sl, tp1, tp2, badgeClass, badgeText;
+
+  if (direction === 'long') {
+    entry = m15High;
+    sl = m15Low;
+    tp1 = entry + range;
+    tp2 = entry + range * 2;
+    badgeClass = 'badge-long';
+    badgeText = '多方偏向 BULLISH';
+  } else {
+    entry = m15Low;
+    sl = m15High;
+    tp1 = entry - range;
+    tp2 = entry - range * 2;
+    badgeClass = 'badge-short';
+    badgeText = '空方偏向 BEARISH';
+  }
+
+  // 判斷價格位置
+  const distToEntry = Math.abs(price - entry).toFixed(1);
+  const priceAboveH15High = price > (h15High || 0);
+  const priceBelowH15Low = price < (h15Low || 99999);
+
+  // 顯示結果
+  document.getElementById('resEntry').textContent = entry.toFixed(1);
+  document.getElementById('resSL').textContent = sl.toFixed(1);
+  document.getElementById('resTP1').textContent = tp1.toFixed(1);
+  document.getElementById('resTP2').textContent = tp2.toFixed(1);
+  document.getElementById('resRange').textContent = range.toFixed(1) + ' pts';
+  document.getElementById('resRes').textContent = h240High ? h240High.toFixed(1) : '—';
+  document.getElementById('resSup').textContent = h240Low ? h240Low.toFixed(1) : '—';
+
+  const badge = document.getElementById('resultBadge');
+  badge.className = 'direction-badge ' + badgeClass;
+  badge.textContent = badgeText;
+
+  // SOP 流程
+  const sopSteps = direction === 'long' ? [
+    { name: '大時區確認方向', desc: '確認 H4/日線多方結構，240 Pivot High 上方為多方偏向空間', val: `當前價 ${price} | 大壓 ${h240High}` },
+    { name: 'H1 結構確認', desc: '確認 H1 多方結構，最多 3 層樓，H1 走完 3 層生命週期結束', val: `H1 撐壓：${h15Low} — ${h15High}` },
+    { name: 'M15 等待突破', desc: `等待 M15 第一根 K 棒向上突破 ${entry.toFixed(1)}`, val: `突破位：${entry.toFixed(1)}` },
+    { name: '等待回測確認', desc: `突破後等第二根 K 棒回測 ${entry.toFixed(1)} 守住，不跌回區間內`, val: `回測守住位：${entry.toFixed(1)}` },
+    { name: '第三根進場做多', desc: '第三根 K 棒確認方向後進場，停損放突破前最後低點外', val: `停損：${sl.toFixed(1)} | TP1：${tp1.toFixed(1)} | TP2：${tp2.toFixed(1)}` }
+  ] : [
+    { name: '大時區確認方向', desc: '確認 H4/日線空方結構，240 Pivot Low 下方為空方偏向空間', val: `當前價 ${price} | 大撐 ${h240Low}` },
+    { name: 'H1 結構確認', desc: '確認 H1 空方結構，最多 3 層樓，H1 走完 3 層生命週期結束', val: `H1 撐壓：${h15Low} — ${h15High}` },
+    { name: 'M15 等待突破', desc: `等待 M15 第一根 K 棒向下突破 ${entry.toFixed(1)}`, val: `突破位：${entry.toFixed(1)}` },
+    { name: '等待回測確認', desc: `突破後等第二根 K 棒回測 ${entry.toFixed(1)} 守住，不反彈回區間內`, val: `回測守住位：${entry.toFixed(1)}` },
+    { name: '第三根進場做空', desc: '第三根 K 棒確認方向後進場，停損放突破前最後高點外', val: `停損：${sl.toFixed(1)} | TP1：${tp1.toFixed(1)} | TP2：${tp2.toFixed(1)}` }
+  ];
+
+  let sopHTML = '';
+  sopSteps.forEach((s, i) => {
+    sopHTML += `<div class="sop-step">
+      <div class="step-num">${i+1}</div>
+      <div class="step-content">
+        <div class="step-name">${s.name}</div>
+        <div class="step-desc">${s.desc}</div>
+        <div class="step-val">${s.val}</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('sopSteps').innerHTML = sopHTML;
+
+  // 分析文字
+  const dirZH = direction === 'long' ? '多' : '空';
+  const dirAction = direction === 'long' ? '做多' : '做空';
+  const distPct = ((Math.abs(price - entry) / entry) * 100).toFixed(2);
+
+  document.getElementById('analysisText').innerHTML = `
+    當前 XAU/USD 價格為 <span class="highlight">${price}</span>，
+    大時區 240 Pivot ${direction === 'long' ? 'High' : 'Low'} 位於 <span class="highlight">${direction === 'long' ? h240High : h240Low}</span>，
+    整體結構偏向<span class="${direction === 'long' ? 'up' : 'down'}">${dirZH}方</span>。<br><br>
+    M15 當前整理區間為 <span class="highlight">${m15Low} — ${m15High}</span>，區間距離 <span class="highlight">${range.toFixed(1)} 點</span>。
+    按照破框 SOP 邏輯，需等待價格${direction === 'long' ? '向上突破' : '向下突破'} <span class="highlight">${entry.toFixed(1)}</span> 後執行進場流程。<br><br>
+    若突破成立並完成回測確認，第三根 K 棒進場${dirAction}，停損設於 <span class="highlight">${sl.toFixed(1)}</span> 結構外，
+    TP1 目標 <span class="highlight">${tp1.toFixed(1)}</span>（1:1 區間距離），TP2 目標 <span class="highlight">${tp2.toFixed(1)}</span>。
+    達到 TP1 後建議停損移至保本位，剩餘倉位續抱衝 TP2。
+  `;
+
+  document.getElementById('notDoText').innerHTML = `
+    • K 棒在 M15 區間（${m15Low} — ${m15High}）內盤整 → 不做<br>
+    • 突破後壓在撐壓線上方/下方不回測 → 等回測確認才進場<br>
+    • 重大數據發布前（非農、CPI、FOMC）→ 不做，等結構重建<br>
+    • 當日已連虧三筆 → 停止交易，等明日重新觀察<br>
+    • 行情過熱直接噴出無回測 → 切 M5 等第一突破、第二回測、第三根進場
+  `;
+
+  // 顯示結果區塊
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('sopCard').style.display = 'block';
+  document.getElementById('analysisSection').style.display = 'block';
+
+  // 滾動到結果
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+</body>
+</html>
