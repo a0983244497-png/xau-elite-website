@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XAU Elite | 日內分析</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #c9a84c;
+  --gold-dim: rgba(201,168,76,0.15);
+  --bg: #080b12;
+  --bg2: #0d1220;
+  --bg3: #111827;
+  --border: rgba(201,168,76,0.2);
+  --text: #e8eaf0;
+  --text-dim: #6b7a99;
+  --green: #34d399;
+  --red: #f87171;
+  --yellow: #fbbf24;
+  --purple: #a78bfa;
+  --blue: #60a5fa;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans TC', sans-serif; min-height: 100vh; }
+
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background: radial-gradient(ellipse 80% 50% at 20% 20%, rgba(201,168,76,0.03) 0%, transparent 60%);
+  pointer-events: none; z-index: 0;
+}
+
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(8,11,18,0.9); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 40px; height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.nav-logo { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--gold); text-decoration: none; letter-spacing: 2px; }
+.nav-right { display: flex; align-items: center; gap: 12px; }
+.nav-back { padding: 7px 16px; background: var(--gold-dim); border: 1px solid var(--border); border-radius: 8px; color: var(--gold); font-size: 12px; text-decoration: none; font-family: 'IBM Plex Mono', monospace; }
+
+.container { max-width: 960px; margin: 0 auto; padding: 90px 24px 60px; position: relative; z-index: 1; }
+
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+.page-header-left h1 { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: #f0f4ff; margin-bottom: 4px; }
+.page-header-left p { font-size: 12px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; }
+
+.price-block { text-align: right; }
+.price-tag { font-family: 'IBM Plex Mono', monospace; font-size: 32px; font-weight: 600; color: var(--gold); }
+.price-change { font-size: 13px; margin-top: 2px; font-family: 'IBM Plex Mono', monospace; }
+
+/* DATE SELECTOR */
+.date-selector { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.date-label { font-size: 11px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; }
+.date-btn { padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg2); color: var(--text-dim); font-size: 12px; cursor: pointer; font-family: 'IBM Plex Mono', monospace; transition: all 0.2s; }
+.date-btn:hover { border-color: var(--gold); color: var(--gold); }
+.date-btn.active { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+.date-input { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg2); color: var(--text); font-size: 12px; font-family: 'IBM Plex Mono', monospace; outline: none; cursor: pointer; }
+.date-input:focus { border-color: var(--gold); }
+
+/* DIRECTION BAR */
+.direction-bar { border-radius: 14px; padding: 20px 24px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.direction-bar.bullish { background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.25); }
+.direction-bar.bearish { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); }
+.direction-bar.neutral { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); }
+
+.dir-left { display: flex; align-items: center; gap: 14px; }
+.dir-icon { font-size: 28px; }
+.dir-label { font-size: 10px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3px; }
+.dir-value { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; }
+.bullish .dir-value { color: var(--green); }
+.bearish .dir-value { color: var(--red); }
+.neutral .dir-value { color: var(--yellow); }
+.dir-bias { font-size: 13px; color: #b0b8cc; max-width: 520px; line-height: 1.6; }
+
+/* GRID */
+.main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.full-width { grid-column: 1 / -1; }
+
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.card-header { padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; }
+.card-title { font-size: 11px; font-weight: 600; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; font-family: 'IBM Plex Mono', monospace; }
+.card-body { padding: 16px 20px; }
+
+/* KEY LEVELS */
+.zone-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.zone-item:last-child { border-bottom: none; }
+.zone-tag { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; font-family: 'IBM Plex Mono', monospace; min-width: 36px; text-align: center; }
+.zone-res { background: rgba(248,113,113,0.12); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
+.zone-sup { background: rgba(52,211,153,0.12); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
+.zone-key { background: rgba(201,168,76,0.12); color: var(--gold); border: 1px solid rgba(201,168,76,0.2); }
+.zone-price { font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; color: #f0f4ff; min-width: 70px; }
+.zone-desc { font-size: 12px; color: var(--text-dim); flex: 1; }
+
+/* BIAS POINTS */
+.bias-point { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
+.bias-point:last-child { margin-bottom: 0; }
+.bias-icon { font-size: 15px; flex-shrink: 0; }
+.bias-text { font-size: 13px; color: #b0b8cc; line-height: 1.6; }
+
+/* ECO CALENDAR */
+.eco-item { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.eco-item:last-child { border-bottom: none; }
+.eco-time { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim); min-width: 52px; padding-top: 2px; }
+.eco-impact { width: 7px; height: 7px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+.impact-high { background: var(--red); box-shadow: 0 0 5px var(--red); }
+.impact-medium { background: var(--yellow); }
+.impact-low { background: var(--text-dim); }
+.eco-name { font-size: 13px; color: var(--text); margin-bottom: 2px; }
+.eco-detail { font-size: 11px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; }
+
+/* NEWS */
+.news-item { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer; transition: all 0.2s; }
+.news-item:last-child { border-bottom: none; }
+.news-item:hover { padding-left: 4px; }
+.news-item:hover .news-title { color: var(--gold); }
+.news-time { font-size: 10px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; margin-bottom: 4px; }
+.news-title { font-size: 13px; color: var(--text); line-height: 1.5; transition: color 0.2s; }
+.news-sentiment { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-left: 6px; }
+.sent-bullish { background: rgba(52,211,153,0.15); color: var(--green); }
+.sent-bearish { background: rgba(248,113,113,0.15); color: var(--red); }
+.sent-neutral { background: rgba(107,122,153,0.15); color: var(--text-dim); }
+
+/* MACRO */
+.macro-stat { background: var(--bg3); border-radius: 10px; padding: 14px; border: 1px solid rgba(255,255,255,0.05); }
+.macro-stat-label { font-size: 10px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; margin-bottom: 6px; }
+.macro-stat-val { font-size: 15px; font-weight: 600; }
+.macro-stat-note { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+.macro-text { font-size: 13px; color: #b0b8cc; line-height: 1.9; margin-top: 16px; }
+
+.disclaimer { text-align: center; font-size: 11px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; margin-top: 24px; line-height: 1.7; }
+
+@media (max-width: 768px) {
+  nav { padding: 0 16px; }
+  .container { padding: 80px 16px 40px; }
+  .main-grid { grid-template-columns: 1fr; }
+  .full-width { grid-column: 1; }
+  .price-tag { font-size: 24px; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">XAU ELITE</a>
+  <div class="nav-right">
+    <a href="/" class="nav-back">← 返回</a>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>XAU/USD 日內分析</h1>
+      <p id="pageSubDate">2026年6月6日 星期五</p>
+    </div>
+    <div class="price-block">
+      <div class="price-tag">3,296.60</div>
+      <div class="price-change" style="color:#34d399;">+18.40 (+0.56%)</div>
+    </div>
+  </div>
+
+  <!-- DATE SELECTOR -->
+  <div class="date-selector">
+    <span class="date-label">查看日期：</span>
+    <button class="date-btn active" onclick="selectDate('fri')">週五 06/06</button>
+    <button class="date-btn" onclick="selectDate('thu')">週四 06/05</button>
+    <button class="date-btn" onclick="selectDate('wed')">週三 06/04</button>
+    <input type="date" class="date-input" id="customDate" onchange="selectCustomDate(this.value)"
+      min="2026-03-07" max="2026-06-06">
+  </div>
+
+  <!-- DIRECTION BAR -->
+  <div class="direction-bar bullish">
+    <div class="dir-left">
+      <div class="dir-icon">▲</div>
+      <div>
+        <div class="dir-label">今日方向偏向</div>
+        <div class="dir-value">多方偏向 BULLISH</div>
+      </div>
+    </div>
+    <div class="dir-bias">週五黃金收漲，美元指數走弱帶動金價回升。非農數據略遜預期，市場降息預期升溫，支撐黃金多方格局。H4 結構維持偏多，M15 關注突破進場機會。</div>
+  </div>
+
+  <div class="main-grid">
+
+    <!-- 日內偏見 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">💡 日內偏見</div>
+      </div>
+      <div class="card-body">
+        <div class="bias-point">
+          <div class="bias-icon">🟢</div>
+          <div class="bias-text">整體結構偏<strong style="color:#34d399">多方</strong>，美元指數走弱為黃金提供上行動能，關注 3,310 壓力突破。</div>
+        </div>
+        <div class="bias-point">
+          <div class="bias-icon">📊</div>
+          <div class="bias-text">M15 整理區間 3,275 — 3,298，等待突破 3,298 後執行多單 SOP：第一根突破→第二根回測→第三根進場。</div>
+        </div>
+        <div class="bias-point">
+          <div class="bias-icon">⚠️</div>
+          <div class="bias-text">非農數據公布後行情波動加劇，等結構重建後再進場，數據前不做。</div>
+        </div>
+        <div class="bias-point">
+          <div class="bias-icon">🎯</div>
+          <div class="bias-text">停利策略：M15 區間 1:1 爬樓梯，TP1 達到後停損移至保本，M15 兩層收手。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 今日關鍵位 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🎯 今日關鍵位</div>
+      </div>
+      <div class="card-body">
+        <div class="zone-item">
+          <span class="zone-tag zone-res">壓力</span>
+          <span class="zone-price">3,354.8</span>
+          <span class="zone-desc">240 Pivot High 大壓</span>
+        </div>
+        <div class="zone-item">
+          <span class="zone-tag zone-res">壓力</span>
+          <span class="zone-price">3,310.5</span>
+          <span class="zone-desc">15 Pivot High 近期壓力</span>
+        </div>
+        <div class="zone-item">
+          <span class="zone-tag zone-key">突破位</span>
+          <span class="zone-price">3,298.0</span>
+          <span class="zone-desc">M15 整理區間高點</span>
+        </div>
+        <div class="zone-item">
+          <span class="zone-tag zone-key">當前</span>
+          <span class="zone-price">3,296.6</span>
+          <span class="zone-desc">週五收盤價</span>
+        </div>
+        <div class="zone-item">
+          <span class="zone-tag zone-sup">支撐</span>
+          <span class="zone-price">3,275.0</span>
+          <span class="zone-desc">M15 整理區間低點</span>
+        </div>
+        <div class="zone-item">
+          <span class="zone-tag zone-sup">支撐</span>
+          <span class="zone-price">3,245.6</span>
+          <span class="zone-desc">240 Pivot Low 大撐</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 總經事件 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📅 重要總經事件</div>
+      </div>
+      <div class="card-body">
+        <div class="eco-item">
+          <div class="eco-time">20:30</div>
+          <div class="eco-impact impact-high"></div>
+          <div>
+            <div class="eco-name">美國非農就業人數（5月）</div>
+            <div class="eco-detail">實際：139K｜預期：185K｜前值：177K</div>
+          </div>
+        </div>
+        <div class="eco-item">
+          <div class="eco-time">20:30</div>
+          <div class="eco-impact impact-high"></div>
+          <div>
+            <div class="eco-name">美國失業率（5月）</div>
+            <div class="eco-detail">實際：4.2%｜預期：4.2%｜前值：4.2%</div>
+          </div>
+        </div>
+        <div class="eco-item">
+          <div class="eco-time">20:30</div>
+          <div class="eco-impact impact-medium"></div>
+          <div>
+            <div class="eco-name">平均時薪月增率</div>
+            <div class="eco-detail">實際：0.3%｜預期：0.3%｜前值：0.2%</div>
+          </div>
+        </div>
+        <div class="eco-item">
+          <div class="eco-time">22:00</div>
+          <div class="eco-impact impact-low"></div>
+          <div>
+            <div class="eco-name">密西根大學消費者信心指數</div>
+            <div class="eco-detail">實際：57.9｜預期：53.4｜前值：52.2</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 黃金新聞 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📰 市場重點新聞</div>
+      </div>
+      <div class="card-body">
+        <div class="news-item">
+          <div class="news-time">22:45 · Reuters</div>
+          <div class="news-title">非農遜預期推升黃金 美元走弱提供支撐<span class="news-sentiment sent-bullish">利多</span></div>
+        </div>
+        <div class="news-item">
+          <div class="news-time">21:30 · Bloomberg</div>
+          <div class="news-title">Fed 官員發言偏鴿 市場升息預期降溫<span class="news-sentiment sent-bullish">利多</span></div>
+        </div>
+        <div class="news-item">
+          <div class="news-time">18:00 · FXStreet</div>
+          <div class="news-title">黃金技術面：3,300 關口為關鍵壓力位<span class="news-sentiment sent-neutral">中性</span></div>
+        </div>
+        <div class="news-item">
+          <div class="news-time">15:20 · Kitco</div>
+          <div class="news-title">地緣政治緊張升溫 避險需求支撐金價<span class="news-sentiment sent-bullish">利多</span></div>
+        </div>
+        <div class="news-item">
+          <div class="news-time">10:00 · MarketWatch</div>
+          <div class="news-title">中國央行連續增持黃金儲備<span class="news-sentiment sent-bullish">利多</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 總經背景分析 -->
+    <div class="card full-width">
+      <div class="card-header">
+        <div class="card-title">🌍 總經背景分析</div>
+      </div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+          <div class="macro-stat">
+            <div class="macro-stat-label">美元指數 DXY</div>
+            <div class="macro-stat-val" style="color:#f87171;">走弱 ▼ 99.2</div>
+            <div class="macro-stat-note">非農遜預期後回落</div>
+          </div>
+          <div class="macro-stat">
+            <div class="macro-stat-label">10年期美債殖利率</div>
+            <div class="macro-stat-val" style="color:#f87171;">4.38% ▼</div>
+            <div class="macro-stat-note">降息預期升溫壓低殖利率</div>
+          </div>
+          <div class="macro-stat">
+            <div class="macro-stat-label">市場風險情緒</div>
+            <div class="macro-stat-val" style="color:#34d399;">避險偏強</div>
+            <div class="macro-stat-note">地緣政治不確定性升高</div>
+          </div>
+        </div>
+        <div class="macro-text">
+          <strong style="color:#f0f4ff;">非農數據解讀：</strong>
+          5月非農就業人數僅增加 139K，遠低於市場預期的 185K，顯示勞動市場降溫。此數據強化市場對聯準會 2026 年降息的預期，美元承壓下行，黃金獲得支撐上漲。失業率維持 4.2% 符合預期，未見惡化。<br><br>
+          <strong style="color:#f0f4ff;">Fed 政策展望：</strong>
+          非農遜預期後，市場對 9 月降息的預期升溫至約 75%。若後續 CPI 數據也偏弱，降息路徑將更為明確，黃金中期多頭格局可望延續。關注下週 CPI 數據（6月11日）是否確認通膨持續降溫。<br><br>
+          <strong style="color:#f0f4ff;">技術面總結：</strong>
+          黃金週五收漲，收盤價 3,296.60，M15 整理區間 3,275 — 3,298。下週開盤若能突破 3,298 並有效回測守住，則多單機會浮現，TP1 目標 3,321，TP2 目標 3,344。若失守 3,275 則觀望等待新結構形成。
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="disclaimer">
+    ⚠️ 本頁數據為教育用途，不構成投資建議。實際交易請結合個人風控，單筆虧損控制帳戶 1%～3%。<br>
+    數據來源：Finnhub · Reuters · Bloomberg · 週五 2026/06/06 收盤數據
+  </div>
+
+</div>
+
+<script>
+// 日期切換邏輯（目前為示範版）
+function selectDate(day) {
+  document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  const dates = {
+    fri: '2026年6月6日 星期五',
+    thu: '2026年6月5日 星期四',
+    wed: '2026年6月4日 星期三'
+  };
+  document.getElementById('pageSubDate').textContent = dates[day] || dates.fri;
+}
+
+function selectCustomDate(val) {
+  if (!val) return;
+  document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+  const d = new Date(val);
+  const dateStr = d.toLocaleDateString('zh-TW', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+  document.getElementById('pageSubDate').textContent = dateStr;
+}
+</script>
+</body>
+</html>
