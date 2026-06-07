@@ -1,8 +1,7 @@
 from flask import Flask, send_from_directory, request, jsonify
 from flask_cors import CORS
 import os
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import pg8000.native
 from datetime import datetime
 
 app = Flask(__name__)
@@ -11,13 +10,20 @@ CORS(app)
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 def get_db():
-    conn = psycopg2.connect(DATABASE_URL)
+    import urllib.parse
+    url = urllib.parse.urlparse(DATABASE_URL)
+    conn = pg8000.native.Connection(
+        user=url.username,
+        password=url.password,
+        host=url.hostname,
+        port=url.port or 5432,
+        database=url.path[1:]
+    )
     return conn
 
 def init_db():
     conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
+    conn.run("""
         CREATE TABLE IF NOT EXISTS applications (
             id SERIAL PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
@@ -29,11 +35,7 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-    conn.commit()
-    cur.close()
-    conn.close()
 
-# 初始化資料庫
 try:
     init_db()
     print("資料庫初始化成功")
@@ -63,14 +65,10 @@ def apply():
 
     try:
         conn = get_db()
-        cur = conn.cursor()
-        cur.execute("""
+        conn.run("""
             INSERT INTO applications (name, telegram, email, experience, reason)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (name, telegram, email, experience, reason))
-        conn.commit()
-        cur.close()
-        conn.close()
+            VALUES (:name, :telegram, :email, :experience, :reason)
+        """, name=name, telegram=telegram, email=email, experience=experience, reason=reason)
         return jsonify({"ok": True, "message": "申請已送出！"})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
@@ -84,12 +82,10 @@ def get_applications():
 
     try:
         conn = get_db()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT * FROM applications ORDER BY created_at DESC")
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
-        return jsonify({"ok": True, "data": [dict(r) for r in rows]})
+        rows = conn.run("SELECT * FROM applications ORDER BY created_at DESC")
+        columns = ['id','name','telegram','email','experience','reason','status','created_at']
+        data = [dict(zip(columns, row)) for row in rows]
+        return jsonify({"ok": True, "data": data})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
@@ -107,11 +103,7 @@ def update_application(app_id):
 
     try:
         conn = get_db()
-        cur = conn.cursor()
-        cur.execute("UPDATE applications SET status = %s WHERE id = %s", (status, app_id))
-        conn.commit()
-        cur.close()
-        conn.close()
+        conn.run("UPDATE applications SET status = :status WHERE id = :id", status=status, id=app_id)
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
