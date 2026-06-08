@@ -25,8 +25,6 @@
 html { scroll-behavior: smooth; }
 body { background: var(--bg); color: var(--text); font-family: 'Noto Sans TC', sans-serif; min-height: 100vh; overflow-x: hidden; }
 body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse 80% 50% at 20% 20%, rgba(201,168,76,0.04) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 80% 80%, rgba(96,165,250,0.03) 0%, transparent 50%); pointer-events: none; z-index: 0; }
-
-/* NAV */
 nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(8,11,18,0.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); padding: 0 40px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
 .nav-logo { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--gold); letter-spacing: 2px; text-decoration: none; cursor: pointer; }
 .nav-logo span { color: var(--text-dim); font-weight: 400; font-size: 13px; margin-left: 8px; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; }
@@ -36,8 +34,6 @@ nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba
 .lang-btn.active { background: var(--gold-dim); color: var(--gold); }
 .nav-apply-btn { padding: 8px 20px; background: var(--gold-dim); border: 1px solid var(--border); border-radius: 8px; color: var(--gold); font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Noto Sans TC', sans-serif; transition: all 0.2s; text-decoration: none; }
 .nav-apply-btn:hover { background: rgba(201,168,76,0.25); }
-
-/* HERO */
 .hero { position: relative; z-index: 1; padding: 140px 40px 80px; max-width: 1100px; margin: 0 auto; }
 .hero-tag { display: inline-flex; align-items: center; gap: 8px; background: var(--gold-dim); border: 1px solid var(--border); border-radius: 20px; padding: 6px 16px; font-size: 11px; font-weight: 600; color: var(--gold); font-family: 'IBM Plex Mono', monospace; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 28px; }
 .hero-tag::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: blink 2s infinite; }
@@ -50,15 +46,11 @@ nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba
 .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
 .btn-secondary { padding: 14px 32px; background: transparent; border: 1px solid var(--border); border-radius: 10px; color: var(--gold); font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Noto Sans TC', sans-serif; transition: all 0.2s; text-decoration: none; display: inline-block; }
 .btn-secondary:hover { background: var(--gold-dim); }
-
-/* STATS BAR */
 .stats-bar { position: relative; z-index: 1; background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 20px 40px; }
 .stats-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
 .stat-item { text-align: center; }
 .stat-val { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--gold); margin-bottom: 4px; }
 .stat-label { font-size: 11px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; text-transform: uppercase; }
-
-/* 【夥伴4】AI 市場分析區塊 */
 .articles-section { position: relative; z-index: 1; padding: 48px 40px 0; max-width: 1100px; margin: 0 auto; }
 .articles-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 24px; }
 .articles-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #f0f4ff; margin-bottom: 4px; }
@@ -81,11 +73,7 @@ nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba
 .article-item-date { font-size: 10px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; margin-bottom: 6px; }
 .article-item-title { font-size: 13px; font-weight: 600; color: #e0e4f0; line-height: 1.45; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .article-item-preview { font-size: 11px; color: var(--text-dim); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-
-/* MAIN CONTENT */
 .main { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 60px 40px; display: grid; grid-template-columns: 1fr 340px; gap: 32px; align-items: start; }
-
-/* Analysis Card */
 .analysis-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
 .card-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
 .card-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: #f0f4ff; }
@@ -110,8 +98,6 @@ nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba
 .level-val.up { color: var(--green); }
 .level-val.down { color: var(--red); }
 .level-val.neutral { color: var(--gold); }
-
-/* SIDEBAR */
 .sidebar { display: flex; flex-direction: column; gap: 20px; }
 .side-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
 .side-header { padding: 16px 20px; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; text-transform: uppercase; }
@@ -127,8 +113,6 @@ nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba
 .signal-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
 .signal-time { font-size: 11px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; }
 .signal-price { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: var(--gold); }
-
-/* APPLY SECTION */
 .apply-section { position: relative; z-index: 1; background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 80px 40px; text-align: center; }
 .apply-inner { max-width: 560px; margin: 0 auto; }
 .apply-inner h2 { font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 700; color: #f0f4ff; margin-bottom: 16px; }
@@ -149,13 +133,9 @@ nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba
 .success-msg .check { font-size: 40px; margin-bottom: 12px; }
 .success-msg h3 { font-size: 16px; font-weight: 700; color: var(--green); margin-bottom: 8px; }
 .success-msg p { font-size: 13px; color: var(--text-dim); margin-bottom: 0; }
-
-/* FOOTER */
 footer { position: relative; z-index: 1; padding: 40px; text-align: center; border-top: 1px solid var(--border); }
 .footer-logo { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--gold); letter-spacing: 2px; margin-bottom: 12px; }
 .footer-text { font-size: 12px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; }
-
-/* ADMIN PANEL */
 .admin-panel { display: none; position: fixed; inset: 0; background: rgba(8,11,18,0.95); z-index: 200; overflow-y: auto; padding: 40px; }
 .admin-inner { max-width: 700px; margin: 0 auto; }
 .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
@@ -173,13 +153,9 @@ footer { position: relative; z-index: 1; padding: 40px; text-align: center; bord
 .admin-trigger-btn { width: 100%; padding: 13px; background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.4); border-radius: 10px; color: var(--green); font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Noto Sans TC', sans-serif; margin-top: 8px; transition: all 0.2s; }
 .admin-trigger-btn:hover { background: rgba(52,211,153,0.25); }
 .admin-trigger-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* TOAST */
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--bg3); border: 1px solid var(--green); color: var(--green); padding: 10px 24px; border-radius: 8px; font-size: 13px; font-family: 'IBM Plex Mono', monospace; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; white-space: nowrap; }
 .toast.show { opacity: 1; }
 .toast.error { border-color: var(--red); color: var(--red); }
-
-/* RESPONSIVE */
 @media (max-width: 768px) {
   nav { padding: 0 20px; }
   .hero { padding: 100px 20px 60px; }
@@ -198,8 +174,6 @@ footer { position: relative; z-index: 1; padding: 40px; text-align: center; bord
 </style>
 </head>
 <body>
-
-<!-- NAV -->
 <nav>
   <a class="nav-logo" onclick="handleLogoClick()">XAU ELITE <span>GOLD SIGNALS</span></a>
   <div class="nav-right">
@@ -210,8 +184,6 @@ footer { position: relative; z-index: 1; padding: 40px; text-align: center; bord
     <a href="#apply" class="nav-apply-btn" data-zh="申請加入" data-en="Apply Now">申請加入</a>
   </div>
 </nav>
-
-<!-- HERO -->
 <section class="hero">
   <div class="hero-tag" data-zh="每日黃金現貨交易訊號" data-en="Daily XAU/USD Trade Signals">每日黃金現貨交易訊號</div>
   <h1>
@@ -225,40 +197,21 @@ footer { position: relative; z-index: 1; padding: 40px; text-align: center; bord
     <a href="#apply" class="btn-secondary" data-zh="申請加入" data-en="Apply to Join">申請加入</a>
   </div>
 </section>
-
-<!-- STATS -->
 <div class="stats-bar">
   <div class="stats-inner">
-    <div class="stat-item">
-      <div class="stat-val">200+</div>
-      <div class="stat-label" data-zh="活躍學員" data-en="Active Members">活躍學員</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-val">XAU</div>
-      <div class="stat-label" data-zh="專注品種" data-en="Focus Pair">專注品種</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-val">M15</div>
-      <div class="stat-label" data-zh="精準執行時區" data-en="Execution Timeframe">精準執行時區</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-val">1:1</div>
-      <div class="stat-label" data-zh="爬樓梯停利" data-en="Staircase TP">爬樓梯停利</div>
-    </div>
+    <div class="stat-item"><div class="stat-val">200+</div><div class="stat-label" data-zh="活躍學員" data-en="Active Members">活躍學員</div></div>
+    <div class="stat-item"><div class="stat-val">XAU</div><div class="stat-label" data-zh="專注品種" data-en="Focus Pair">專注品種</div></div>
+    <div class="stat-item"><div class="stat-val">M15</div><div class="stat-label" data-zh="精準執行時區" data-en="Execution Timeframe">精準執行時區</div></div>
+    <div class="stat-item"><div class="stat-val">1:1</div><div class="stat-label" data-zh="爬樓梯停利" data-en="Staircase TP">爬樓梯停利</div></div>
   </div>
 </div>
-
-<!-- 【夥伴4】AI 市場分析文章區塊 -->
 <section class="articles-section" id="market-articles">
   <div class="articles-header">
     <div>
       <div class="articles-title" data-zh="AI 市場分析" data-en="AI Market Analysis">AI 市場分析</div>
       <div class="articles-sub" data-zh="每週一、三、五 08:00 自動更新" data-en="Auto-updated Mon / Wed / Fri 8AM">每週一、三、五 08:00 自動更新</div>
     </div>
-    <div class="articles-badge">
-      <span class="ai-dot"></span>
-      <span data-zh="夥伴4 自動生成" data-en="Auto Generated">夥伴4 自動生成</span>
-    </div>
+    <div class="articles-badge"><span class="ai-dot"></span><span data-zh="夥伴4 自動生成" data-en="Auto Generated">夥伴4 自動生成</span></div>
   </div>
   <div class="article-featured" id="articleFeatured">
     <div class="article-featured-meta">
@@ -267,15 +220,10 @@ footer { position: relative; z-index: 1; padding: 40px; text-align: center; bord
     </div>
     <div class="article-featured-title" id="articleTitle">載入中...</div>
     <div class="article-featured-content" id="articleContent">正在取得最新市場分析...</div>
-    <div class="article-no-data" id="articleNoData" style="display:none">
-      <span>📭</span>
-      <span data-zh="尚無分析文章，等待週一三五 08:00 自動生成" data-en="No articles yet. Auto-generated Mon/Wed/Fri 8AM">尚無分析文章，等待週一三五 08:00 自動生成</span>
-    </div>
+    <div class="article-no-data" id="articleNoData" style="display:none"><span>📭</span><span>尚無分析文章，等待週一三五 08:00 自動生成</span></div>
   </div>
   <div class="article-list" id="articleList"></div>
 </section>
-
-<!-- MAIN CONTENT -->
 <section class="main" id="analysis">
   <div class="analysis-card">
     <div class="card-header">
@@ -296,7 +244,7 @@ footer { position: relative; z-index: 1; padding: 40px; text-align: center; bord
         <span class="meta-tag">進場 <span id="entryPrice">—</span></span>
         <span class="meta-tag">停損 <span id="slPrice">—</span></span>
       </div>
-      <div class="analysis-text" id="analysisText" data-zh="今日分析尚未發布，請稍後再回來查看。" data-en="Today's analysis has not been published yet. Please check back later.">今日分析尚未發布，請稍後再回來查看。</div>
+      <div class="analysis-text" id="analysisText">今日分析尚未發布，請稍後再回來查看。</div>
       <div class="key-levels">
         <div class="levels-title" data-zh="關鍵撐壓位" data-en="Key Levels">關鍵撐壓位</div>
         <div class="level-row"><span class="level-name" data-zh="上方大壓" data-en="Major Resistance">上方大壓</span><span class="level-val neutral" id="lvl-res">—</span></div>
@@ -307,116 +255,75 @@ footer { position: relative; z-index: 1; padding: 40px; text-align: center; bord
       </div>
     </div>
   </div>
-
   <div class="sidebar">
     <div class="side-card">
       <div class="side-header" data-zh="近期訊號紀錄" data-en="Recent Signals">近期訊號紀錄</div>
       <div class="signal-list" id="signalList">
-        <div class="signal-item">
-          <div class="signal-dot long"></div>
-          <div class="signal-info"><div class="signal-title">XAU/USD 多單</div><div class="signal-time">2026-06-04 10:30</div></div>
-          <div class="signal-price">4,498.7</div>
-        </div>
-        <div class="signal-item">
-          <div class="signal-dot short"></div>
-          <div class="signal-info"><div class="signal-title">XAU/USD 空單</div><div class="signal-time">2026-06-03 14:15</div></div>
-          <div class="signal-price">4,541.6</div>
-        </div>
-        <div class="signal-item">
-          <div class="signal-dot long"></div>
-          <div class="signal-info"><div class="signal-title">XAU/USD 多單</div><div class="signal-time">2026-06-02 09:45</div></div>
-          <div class="signal-price">4,463.2</div>
-        </div>
+        <div class="signal-item"><div class="signal-dot long"></div><div class="signal-info"><div class="signal-title">XAU/USD 多單</div><div class="signal-time">2026-06-04 10:30</div></div><div class="signal-price">4,498.7</div></div>
+        <div class="signal-item"><div class="signal-dot short"></div><div class="signal-info"><div class="signal-title">XAU/USD 空單</div><div class="signal-time">2026-06-03 14:15</div></div><div class="signal-price">4,541.6</div></div>
+        <div class="signal-item"><div class="signal-dot long"></div><div class="signal-info"><div class="signal-title">XAU/USD 多單</div><div class="signal-time">2026-06-02 09:45</div></div><div class="signal-price">4,463.2</div></div>
       </div>
     </div>
     <div class="side-card">
       <div class="side-header" data-zh="交易系統核心" data-en="Trading System">交易系統核心</div>
-      <div style="padding: 16px 20px;">
+      <div style="padding:16px 20px;">
         <div style="display:flex;flex-direction:column;gap:10px;">
           <div style="display:flex;align-items:center;gap:10px;font-size:12px;"><span style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-weight:600;min-width:40px">H4/D</span><span style="color:var(--text-dim)" data-zh="大時區定方向" data-en="Macro Direction">大時區定方向</span></div>
           <div style="display:flex;align-items:center;gap:10px;font-size:12px;"><span style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-weight:600;min-width:40px">H1</span><span style="color:var(--text-dim)" data-zh="確認結構方向" data-en="Structure Confirm">確認結構方向</span></div>
           <div style="display:flex;align-items:center;gap:10px;font-size:12px;"><span style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-weight:600;min-width:40px">M15</span><span style="color:var(--text-dim)" data-zh="精準進場執行" data-en="Precision Entry">精準進場執行</span></div>
           <div style="height:1px;background:rgba(255,255,255,0.05);margin:4px 0"></div>
-          <div style="font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;line-height:1.6" data-zh="突破 → 回測 → 第三根進場 停損結構外 · 1:1爬樓梯停利" data-en="Breakout → Retest → 3rd Bar Entry SL Outside Structure · 1:1 Staircase TP">突破 → 回測 → 第三根進場<br>停損結構外 · 1:1爬樓梯停利</div>
+          <div style="font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;line-height:1.6">突破 → 回測 → 第三根進場<br>停損結構外 · 1:1爬樓梯停利</div>
         </div>
       </div>
     </div>
   </div>
 </section>
-
-<!-- APPLY SECTION -->
 <section class="apply-section" id="apply">
   <div class="apply-inner">
     <h2 data-zh="申請加入" data-en="Apply to Join">申請加入</h2>
     <p data-zh="填寫申請表後，我們將在 24 小時內審核並通知您。核准後即可查看每日分析與訊號。" data-en="Submit your application and we'll review it within 24 hours. Once approved, you'll have access to daily analysis and signals.">填寫申請表後，我們將在 24 小時內審核並通知您。核准後即可查看每日分析與訊號。</p>
     <div class="apply-form" id="applyForm">
-      <div class="form-title" data-zh="▸ 申請表單" data-en="▸ Application Form">▸ 申請表單</div>
+      <div class="form-title">▸ 申請表單</div>
       <div class="form-row">
-        <div class="form-group">
-          <label data-zh="姓名" data-en="Full Name">姓名</label>
-          <input type="text" id="applyName" placeholder="Your name">
-        </div>
-        <div class="form-group">
-          <label data-zh="Telegram" data-en="Telegram">Telegram</label>
-          <input type="text" id="applyTelegram" placeholder="@username">
-        </div>
+        <div class="form-group"><label>姓名</label><input type="text" id="applyName" placeholder="Your name"></div>
+        <div class="form-group"><label>Telegram</label><input type="text" id="applyTelegram" placeholder="@username"></div>
       </div>
-      <div class="form-group">
-        <label data-zh="Email" data-en="Email">Email</label>
-        <input type="email" id="applyEmail" placeholder="your@email.com">
-      </div>
-      <div class="form-group">
-        <label data-zh="交易經驗" data-en="Trading Experience">交易經驗</label>
+      <div class="form-group"><label>Email</label><input type="email" id="applyEmail" placeholder="your@email.com"></div>
+      <div class="form-group"><label>交易經驗</label>
         <select id="applyExp">
-          <option value="" data-zh="請選擇..." data-en="Select...">請選擇...</option>
-          <option value="beginner" data-zh="新手（< 1年）" data-en="Beginner (< 1yr)">新手（&lt; 1年）</option>
-          <option value="intermediate" data-zh="有經驗（1-3年）" data-en="Intermediate (1-3yr)">有經驗（1-3年）</option>
-          <option value="advanced" data-zh="老手（3年以上）" data-en="Advanced (3yr+)">老手（3年以上）</option>
+          <option value="">請選擇...</option>
+          <option value="beginner">新手（&lt; 1年）</option>
+          <option value="intermediate">有經驗（1-3年）</option>
+          <option value="advanced">老手（3年以上）</option>
         </select>
       </div>
-      <div class="form-group">
-        <label data-zh="申請原因" data-en="Why Join">申請原因</label>
-        <textarea id="applyReason" placeholder="簡短說明為什麼想加入..."></textarea>
-      </div>
-      <button class="form-submit" onclick="submitApplication()" data-zh="送出申請" data-en="Submit Application">送出申請</button>
-      <div class="form-note" data-zh="審核通常在 24 小時內完成" data-en="Reviews usually completed within 24 hours">審核通常在 24 小時內完成</div>
+      <div class="form-group"><label>申請原因</label><textarea id="applyReason" placeholder="簡短說明為什麼想加入..."></textarea></div>
+      <button class="form-submit" onclick="submitApplication()">送出申請</button>
+      <div class="form-note">審核通常在 24 小時內完成</div>
     </div>
     <div class="success-msg" id="successMsg">
       <div class="check">✅</div>
-      <h3 data-zh="申請已送出！" data-en="Application Submitted!">申請已送出！</h3>
-      <p data-zh="我們將在 24 小時內審核並通知您。" data-en="We'll review and notify you within 24 hours.">我們將在 24 小時內審核並通知您。</p>
+      <h3>申請已送出！</h3>
+      <p>我們將在 24 小時內審核並通知您。</p>
     </div>
   </div>
 </section>
-
-<!-- FOOTER -->
 <footer>
   <div class="footer-logo">XAU ELITE</div>
   <div class="footer-text">© 2026 XAU Elite · Gold Signals · All Rights Reserved</div>
 </footer>
-
-<!-- ADMIN PANEL -->
 <div class="admin-panel" id="adminPanel">
   <div class="admin-inner">
     <div class="admin-header">
       <div class="admin-title">⚙️ 後台管理</div>
       <div class="admin-close" onclick="closeAdmin()">✕</div>
     </div>
-
-    <!-- 【夥伴4】AI 生成文章 -->
     <div class="admin-card">
       <div class="admin-card-title">🤖 AI 市場分析文章（夥伴4）</div>
-      <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;line-height:1.6">
-        手動觸發 AI 生成最新市場分析文章（XAU/USD + DXY），生成後自動顯示在首頁。<br>
-        <span style="color:var(--gold)">⏰ 自動排程：週一、三、五 08:00 台灣時間</span>
-      </p>
-      <button class="admin-trigger-btn" id="triggerP4Btn" onclick="triggerPartner4()">
-        ✨ 立即生成市場分析文章
-      </button>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;line-height:1.6">手動觸發 AI 生成最新市場分析文章（XAU/USD + DXY），生成後自動顯示在首頁。<br><span style="color:var(--gold)">⏰ 自動排程：週一、三、五 08:00 台灣時間</span></p>
+      <button class="admin-trigger-btn" id="triggerP4Btn" onclick="triggerPartner4()">✨ 立即生成市場分析文章</button>
       <div id="triggerResult" style="margin-top:12px;font-size:12px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;display:none"></div>
     </div>
-
-    <!-- 發布今日分析 -->
     <div class="admin-card">
       <div class="admin-card-title">📊 發布今日分析</div>
       <div class="admin-form">
@@ -428,10 +335,7 @@ footer { position: relative; z-index: 1; padding: 40px; text-align: center; bord
             <div class="dir-option" id="dir-watch" onclick="selectDir('neutral')">◉ 觀望</div>
           </div>
         </div>
-        <div class="form-group">
-          <label>分析摘要</label>
-          <textarea id="adminBias" placeholder="今日偏見說明..."></textarea>
-        </div>
+        <div class="form-group"><label>分析摘要</label><textarea id="adminBias" placeholder="今日偏見說明..."></textarea></div>
         <div class="form-row">
           <div class="form-group"><label>上方大壓</label><input type="number" id="adminRes" placeholder="例：3350"></div>
           <div class="form-group"><label>下方大撐</label><input type="number" id="adminSup" placeholder="例：3290"></div>
@@ -444,8 +348,6 @@ footer { position: relative; z-index: 1; padding: 40px; text-align: center; bord
         <button class="admin-publish-btn" onclick="publishAnalysis()">發布今日分析</button>
       </div>
     </div>
-
-    <!-- 申請名單 -->
     <div class="admin-card">
       <div class="admin-card-title">📋 申請名單</div>
       <div id="applicationsList" style="font-size:12px;color:var(--text-dim)">載入中...</div>
@@ -453,286 +355,29 @@ footer { position: relative; z-index: 1; padding: 40px; text-align: center; bord
     </div>
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
-
 <script>
-// ── 後台解鎖 ──────────────────────────────────────────────
-let logoClickCount = 0, logoClickTimer = null;
-function handleLogoClick() {
-  logoClickCount++;
-  if (logoClickTimer) clearTimeout(logoClickTimer);
-  logoClickTimer = setTimeout(() => { logoClickCount = 0; }, 3000);
-  if (logoClickCount >= 5) {
-    logoClickCount = 0;
-    const key = prompt('管理員密鑰：');
-    if (key) openAdmin(key);
-  }
-}
-
-let adminKey = '';
-function openAdmin(key) {
-  adminKey = key;
-  document.getElementById('adminPanel').style.display = 'block';
-  loadApplications();
-}
-function closeAdmin() {
-  document.getElementById('adminPanel').style.display = 'none';
-}
-
-// ── Toast ─────────────────────────────────────────────────
-function showToast(msg, isError = false) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show' + (isError ? ' error' : '');
-  setTimeout(() => { t.className = 'toast'; }, 3000);
-}
-
-// ── 語言切換 ──────────────────────────────────────────────
-let currentLang = 'zh';
-function setLang(lang) {
-  currentLang = lang;
-  document.getElementById('langZH').className = 'lang-btn' + (lang === 'zh' ? ' active' : '');
-  document.getElementById('langEN').className = 'lang-btn' + (lang === 'en' ? ' active' : '');
-  document.querySelectorAll('[data-zh]').forEach(el => {
-    el.textContent = el.getAttribute('data-' + lang) || el.textContent;
-  });
-}
-
-// ── 今日日期 ──────────────────────────────────────────────
-function setTodayDate() {
-  const now = new Date();
-  const opts = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' };
-  document.getElementById('todayDate').textContent = now.toLocaleDateString('zh-TW', opts);
-}
-
-// ── 載入今日分析 ──────────────────────────────────────────
-async function loadTodayAnalysis() {
-  try {
-    const res = await fetch('/api/daily_analysis');
-    const data = await res.json();
-    if (!data.ok) return;
-
-    // 方向
-    const badge = document.getElementById('directionBadge');
-    if (data.direction === 'bullish') {
-      badge.className = 'card-badge badge-long';
-      badge.textContent = data.direction_text || '多方偏向 BULLISH';
-    } else if (data.direction === 'bearish') {
-      badge.className = 'card-badge badge-short';
-      badge.textContent = data.direction_text || '空方偏向 BEARISH';
-    } else {
-      badge.className = 'card-badge badge-watch';
-      badge.textContent = data.direction_text || '多空觀望 NEUTRAL';
-    }
-
-    // 內容
-    if (data.bias_summary) {
-      document.getElementById('analysisText').textContent = data.bias_summary;
-    }
-    if (data.gold_price) {
-      document.getElementById('h1Dir').textContent = data.direction === 'bullish' ? '多方' : data.direction === 'bearish' ? '空方' : '觀望';
-      document.getElementById('m15Range').textContent = '$' + data.gold_price.toFixed(0);
-    }
-
-  } catch(e) { console.warn('分析載入失敗', e); }
-}
-
-// ── 【夥伴4】載入 AI 市場分析文章 ────────────────────────
-async function loadMarketArticles() {
-  try {
-    const res = await fetch('/api/articles/latest');
-    const data = await res.json();
-
-    if (!data.ok || !data.article) {
-      document.getElementById('articleTitle').style.display = 'none';
-      document.getElementById('articleContent').style.display = 'none';
-      document.getElementById('articleNoData').style.display = 'flex';
-      return;
-    }
-
-    const a = data.article;
-    const date = new Date(a.published_at).toLocaleDateString('zh-TW', {
-      year: 'numeric', month: 'long', day: 'numeric', weekday: 'short'
-    });
-    const xauSign = a.xau_change_pct >= 0 ? '▲' : '▼';
-    const dxySign = a.dxy_change_pct >= 0 ? '▲' : '▼';
-    const xauClass = a.xau_change_pct >= 0 ? 'up' : 'down';
-    const dxyClass = a.dxy_change_pct >= 0 ? 'down' : 'up';
-
-    document.getElementById('articleDate').textContent = date;
-    document.getElementById('articleTags').innerHTML = `
-      <span class="market-tag">XAU/USD <span class="${xauClass}">$${a.xau_price} ${xauSign}${Math.abs(a.xau_change_pct).toFixed(2)}%</span></span>
-      <span class="market-tag">DXY <span class="${dxyClass}">${a.dxy_price} ${dxySign}${Math.abs(a.dxy_change_pct).toFixed(3)}%</span></span>
-    `;
-    document.getElementById('articleTitle').textContent = a.title;
-    document.getElementById('articleContent').innerHTML = a.content.replace(/\n/g, '<br>');
-
-    loadArticleList();
-  } catch(e) {
-    document.getElementById('articleTitle').textContent = '暫時無法取得分析';
-    document.getElementById('articleContent').textContent = '請稍後再試。';
-  }
-}
-
-async function loadArticleList() {
-  try {
-    const res = await fetch('/api/articles?page=1&per_page=4');
-    const data = await res.json();
-    if (!data.ok || !data.articles || data.articles.length <= 1) return;
-    const list = document.getElementById('articleList');
-    const items = data.articles.slice(1, 4);
-    list.innerHTML = items.map(a => {
-      const date = new Date(a.published_at).toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' });
-      const preview = a.content.replace(/<[^>]*>/g, '').substring(0, 55) + '...';
-      return `<div class="article-item"><div class="article-item-date">${date}</div><div class="article-item-title">${a.title}</div><div class="article-item-preview">${preview}</div></div>`;
-    }).join('');
-  } catch(e) {}
-}
-
-// ── 【夥伴4】後台手動觸發 ────────────────────────────────
-async function triggerPartner4() {
-  const btn = document.getElementById('triggerP4Btn');
-  const result = document.getElementById('triggerResult');
-  btn.disabled = true;
-  btn.textContent = '⏳ 生成中...';
-  result.style.display = 'block';
-  result.textContent = '正在抓取市場數據並呼叫 Claude API...';
-
-  try {
-    const res = await fetch('/api/articles/trigger', {
-      method: 'POST',
-      headers: { 'X-Admin-Key': adminKey }
-    });
-    const data = await res.json();
-    if (data.ok) {
-      result.style.color = 'var(--green)';
-      result.textContent = `✅ 完成！文章：${data.article?.title || '已生成'}`;
-      showToast('✅ 市場分析文章已生成！');
-      loadMarketArticles(); // 重新載入
-    } else {
-      result.style.color = 'var(--red)';
-      result.textContent = '❌ 失敗：' + data.error;
-      showToast('生成失敗：' + data.error, true);
-    }
-  } catch(e) {
-    result.style.color = 'var(--red)';
-    result.textContent = '❌ 網路錯誤：' + e.message;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '✨ 立即生成市場分析文章';
-  }
-}
-
-// ── 發布今日分析 ──────────────────────────────────────────
-let selectedDir = 'bullish';
-function selectDir(dir) {
-  selectedDir = dir;
-  document.querySelectorAll('.dir-option').forEach(el => {
-    el.className = 'dir-option';
-  });
-  if (dir === 'bullish') document.getElementById('dir-long').className = 'dir-option sel-long';
-  else if (dir === 'bearish') document.getElementById('dir-short').className = 'dir-option sel-short';
-  else document.getElementById('dir-watch').className = 'dir-option sel-watch';
-}
-
-async function publishAnalysis() {
-  const bias = document.getElementById('adminBias').value;
-  if (!bias) { showToast('請填入分析摘要', true); return; }
-  try {
-    const res = await fetch('/api/generate_analysis', {
-      method: 'POST',
-      headers: { 'X-Admin-Key': adminKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ direction: selectedDir, bias_summary: bias })
-    });
-    const data = await res.json();
-    if (data.ok) {
-      showToast('✅ 今日分析已發布！');
-      loadTodayAnalysis();
-    } else {
-      showToast('發布失敗：' + data.error, true);
-    }
-  } catch(e) { showToast('網路錯誤', true); }
-}
-
-// ── 申請表單 ──────────────────────────────────────────────
-async function submitApplication() {
-  const name = document.getElementById('applyName').value.trim();
-  const telegram = document.getElementById('applyTelegram').value.trim();
-  const email = document.getElementById('applyEmail').value.trim();
-  const experience = document.getElementById('applyExp').value;
-  const reason = document.getElementById('applyReason').value.trim();
-  if (!name || !telegram || !email) { showToast('請填入所有必填欄位', true); return; }
-  try {
-    const res = await fetch('/api/apply', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, telegram, email, experience, reason })
-    });
-    const data = await res.json();
-    if (data.ok) {
-      document.getElementById('applyForm').style.display = 'none';
-      document.getElementById('successMsg').style.display = 'block';
-    } else {
-      showToast('送出失敗：' + data.error, true);
-    }
-  } catch(e) { showToast('網路錯誤', true); }
-}
-
-// ── 載入申請名單 ──────────────────────────────────────────
-async function loadApplications() {
-  try {
-    const res = await fetch('/api/applications', { headers: { 'X-Admin-Key': adminKey } });
-    const data = await res.json();
-    const el = document.getElementById('applicationsList');
-    if (!data.ok || !data.data.length) { el.textContent = '暫無申請'; return; }
-    el.innerHTML = data.data.map(a => `
-      <div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-          <span style="color:var(--text);font-weight:600">${a.name}</span>
-          <span style="padding:2px 8px;border-radius:4px;font-size:10px;background:${a.status==='approved'?'rgba(52,211,153,0.15)':a.status==='rejected'?'rgba(248,113,113,0.15)':'rgba(251,191,36,0.15)'};color:${a.status==='approved'?'var(--green)':a.status==='rejected'?'var(--red)':'#fbbf24'}">${a.status}</span>
-        </div>
-        <div style="color:var(--text-dim);margin-bottom:6px">${a.telegram} · ${a.email}</div>
-        <div style="display:flex;gap:6px;">
-          <button onclick="updateStatus(${a.id},'approved')" style="padding:4px 10px;background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:4px;color:var(--green);font-size:10px;cursor:pointer">核准</button>
-          <button onclick="updateStatus(${a.id},'rejected')" style="padding:4px 10px;background:rgba(248,113,113,0.15);border:1px solid rgba(248,113,113,0.3);border-radius:4px;color:var(--red);font-size:10px;cursor:pointer">拒絕</button>
-        </div>
-      </div>
-    `).join('');
-  } catch(e) { document.getElementById('applicationsList').textContent = '載入失敗'; }
-}
-
-async function updateStatus(id, status) {
-  try {
-    await fetch(`/api/applications/${id}`, {
-      method: 'PATCH',
-      headers: { 'X-Admin-Key': adminKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    });
-    showToast(status === 'approved' ? '✅ 已核准' : '❌ 已拒絕');
-    loadApplications();
-  } catch(e) { showToast('操作失敗', true); }
-}
-
-function exportCSV() {
-  fetch('/api/applications', { headers: { 'X-Admin-Key': adminKey } })
-    .then(r => r.json()).then(data => {
-      if (!data.ok) return;
-      const rows = [['ID','姓名','Telegram','Email','經驗','原因','狀態','申請時間']];
-      data.data.forEach(a => rows.push([a.id, a.name, a.telegram, a.email, a.experience, a.reason, a.status, a.created_at]));
-      const csv = rows.map(r => r.map(v => `"${v||''}"`).join(',')).join('\n');
-      const blob = new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'applications.csv'; a.click();
-    });
-}
-
-// ── 初始化 ────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  setTodayDate();
-  loadTodayAnalysis();
-  loadMarketArticles();
-});
+let logoClickCount=0,logoClickTimer=null;
+function handleLogoClick(){logoClickCount++;if(logoClickTimer)clearTimeout(logoClickTimer);logoClickTimer=setTimeout(()=>{logoClickCount=0;},3000);if(logoClickCount>=5){logoClickCount=0;const key=prompt('管理員密鑰：');if(key)openAdmin(key);}}
+let adminKey='';
+function openAdmin(key){adminKey=key;document.getElementById('adminPanel').style.display='block';loadApplications();}
+function closeAdmin(){document.getElementById('adminPanel').style.display='none';}
+function showToast(msg,isError=false){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(isError?' error':'');setTimeout(()=>{t.className='toast';},3000);}
+let currentLang='zh';
+function setLang(lang){currentLang=lang;document.getElementById('langZH').className='lang-btn'+(lang==='zh'?' active':'');document.getElementById('langEN').className='lang-btn'+(lang==='en'?' active':'');document.querySelectorAll('[data-zh]').forEach(el=>{el.textContent=el.getAttribute('data-'+lang)||el.textContent;});}
+function setTodayDate(){const now=new Date();document.getElementById('todayDate').textContent=now.toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric',weekday:'short'});}
+async function loadTodayAnalysis(){try{const res=await fetch('/api/daily_analysis');const data=await res.json();if(!data.ok)return;const badge=document.getElementById('directionBadge');if(data.direction==='bullish'){badge.className='card-badge badge-long';badge.textContent=data.direction_text||'多方偏向 BULLISH';}else if(data.direction==='bearish'){badge.className='card-badge badge-short';badge.textContent=data.direction_text||'空方偏向 BEARISH';}else{badge.className='card-badge badge-watch';badge.textContent=data.direction_text||'多空觀望 NEUTRAL';}if(data.bias_summary)document.getElementById('analysisText').textContent=data.bias_summary;if(data.gold_price){document.getElementById('h1Dir').textContent=data.direction==='bullish'?'多方':data.direction==='bearish'?'空方':'觀望';document.getElementById('m15Range').textContent='$'+data.gold_price.toFixed(0);}}catch(e){console.warn('分析載入失敗',e);}}
+async function loadMarketArticles(){try{const res=await fetch('/api/articles/latest');const data=await res.json();if(!data.ok||!data.article){document.getElementById('articleTitle').style.display='none';document.getElementById('articleContent').style.display='none';document.getElementById('articleNoData').style.display='flex';return;}const a=data.article;const date=new Date(a.published_at).toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric',weekday:'short'});const xauSign=a.xau_change_pct>=0?'▲':'▼';const dxySign=a.dxy_change_pct>=0?'▲':'▼';const xauClass=a.xau_change_pct>=0?'up':'down';const dxyClass=a.dxy_change_pct>=0?'down':'up';document.getElementById('articleDate').textContent=date;document.getElementById('articleTags').innerHTML=`<span class="market-tag">XAU/USD <span class="${xauClass}">$${a.xau_price} ${xauSign}${Math.abs(a.xau_change_pct).toFixed(2)}%</span></span><span class="market-tag">DXY <span class="${dxyClass}">${a.dxy_price} ${dxySign}${Math.abs(a.dxy_change_pct).toFixed(3)}%</span></span>`;document.getElementById('articleTitle').textContent=a.title;document.getElementById('articleContent').innerHTML=a.content.replace(/\n/g,'<br>');loadArticleList();}catch(e){document.getElementById('articleTitle').textContent='暫時無法取得分析';document.getElementById('articleContent').textContent='請稍後再試。';}}
+async function loadArticleList(){try{const res=await fetch('/api/articles?page=1&per_page=4');const data=await res.json();if(!data.ok||!data.articles||data.articles.length<=1)return;const list=document.getElementById('articleList');const items=data.articles.slice(1,4);list.innerHTML=items.map(a=>{const date=new Date(a.published_at).toLocaleDateString('zh-TW',{month:'short',day:'numeric'});const preview=a.content.replace(/<[^>]*>/g,'').substring(0,55)+'...';return`<div class="article-item"><div class="article-item-date">${date}</div><div class="article-item-title">${a.title}</div><div class="article-item-preview">${preview}</div></div>`;}).join('');}catch(e){}}
+async function triggerPartner4(){const btn=document.getElementById('triggerP4Btn');const result=document.getElementById('triggerResult');btn.disabled=true;btn.textContent='⏳ 生成中...';result.style.display='block';result.textContent='正在抓取市場數據並呼叫 Claude API...';try{const res=await fetch('/api/articles/trigger',{method:'POST',headers:{'X-Admin-Key':adminKey}});const data=await res.json();if(data.ok){result.style.color='var(--green)';result.textContent=`✅ 完成！文章：${data.article?.title||'已生成'}`;showToast('✅ 市場分析文章已生成！');loadMarketArticles();}else{result.style.color='var(--red)';result.textContent='❌ 失敗：'+data.error;showToast('生成失敗：'+data.error,true);}}catch(e){result.style.color='var(--red)';result.textContent='❌ 網路錯誤：'+e.message;}finally{btn.disabled=false;btn.textContent='✨ 立即生成市場分析文章';}}
+let selectedDir='bullish';
+function selectDir(dir){selectedDir=dir;document.querySelectorAll('.dir-option').forEach(el=>{el.className='dir-option';});if(dir==='bullish')document.getElementById('dir-long').className='dir-option sel-long';else if(dir==='bearish')document.getElementById('dir-short').className='dir-option sel-short';else document.getElementById('dir-watch').className='dir-option sel-watch';}
+async function publishAnalysis(){const bias=document.getElementById('adminBias').value;if(!bias){showToast('請填入分析摘要',true);return;}try{const res=await fetch('/api/generate_analysis',{method:'POST',headers:{'X-Admin-Key':adminKey,'Content-Type':'application/json'},body:JSON.stringify({direction:selectedDir,bias_summary:bias})});const data=await res.json();if(data.ok){showToast('✅ 今日分析已發布！');loadTodayAnalysis();}else{showToast('發布失敗：'+data.error,true);}}catch(e){showToast('網路錯誤',true);}}
+async function submitApplication(){const name=document.getElementById('applyName').value.trim();const telegram=document.getElementById('applyTelegram').value.trim();const email=document.getElementById('applyEmail').value.trim();const experience=document.getElementById('applyExp').value;const reason=document.getElementById('applyReason').value.trim();if(!name||!telegram||!email){showToast('請填入所有必填欄位',true);return;}try{const res=await fetch('/api/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,telegram,email,experience,reason})});const data=await res.json();if(data.ok){document.getElementById('applyForm').style.display='none';document.getElementById('successMsg').style.display='block';}else{showToast('送出失敗：'+data.error,true);}}catch(e){showToast('網路錯誤',true);}}
+async function loadApplications(){try{const res=await fetch('/api/applications',{headers:{'X-Admin-Key':adminKey}});const data=await res.json();const el=document.getElementById('applicationsList');if(!data.ok||!data.data.length){el.textContent='暫無申請';return;}el.innerHTML=data.data.map(a=>`<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><span style="color:var(--text);font-weight:600">${a.name}</span><span style="padding:2px 8px;border-radius:4px;font-size:10px;background:${a.status==='approved'?'rgba(52,211,153,0.15)':a.status==='rejected'?'rgba(248,113,113,0.15)':'rgba(251,191,36,0.15)'};color:${a.status==='approved'?'var(--green)':a.status==='rejected'?'var(--red)':'#fbbf24'}">${a.status}</span></div><div style="color:var(--text-dim);margin-bottom:6px">${a.telegram} · ${a.email}</div><div style="display:flex;gap:6px;"><button onclick="updateStatus(${a.id},'approved')" style="padding:4px 10px;background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:4px;color:var(--green);font-size:10px;cursor:pointer">核准</button><button onclick="updateStatus(${a.id},'rejected')" style="padding:4px 10px;background:rgba(248,113,113,0.15);border:1px solid rgba(248,113,113,0.3);border-radius:4px;color:var(--red);font-size:10px;cursor:pointer">拒絕</button></div></div>`).join('');}catch(e){document.getElementById('applicationsList').textContent='載入失敗';}}
+async function updateStatus(id,status){try{await fetch(`/api/applications/${id}`,{method:'PATCH',headers:{'X-Admin-Key':adminKey,'Content-Type':'application/json'},body:JSON.stringify({status})});showToast(status==='approved'?'✅ 已核准':'❌ 已拒絕');loadApplications();}catch(e){showToast('操作失敗',true);}}
+function exportCSV(){fetch('/api/applications',{headers:{'X-Admin-Key':adminKey}}).then(r=>r.json()).then(data=>{if(!data.ok)return;const rows=[['ID','姓名','Telegram','Email','經驗','原因','狀態','申請時間']];data.data.forEach(a=>rows.push([a.id,a.name,a.telegram,a.email,a.experience,a.reason,a.status,a.created_at]));const csv=rows.map(r=>r.map(v=>`"${v||''}"`).join(',')).join('\n');const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='applications.csv';a.click();});}
+document.addEventListener('DOMContentLoaded',()=>{setTodayDate();loadTodayAnalysis();loadMarketArticles();});
 </script>
 </body>
 </html>
