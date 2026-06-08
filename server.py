@@ -61,6 +61,16 @@ def init_db():
         is_published BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    # 【訊號紀錄】
+    conn.run("""CREATE TABLE IF NOT EXISTS signals (
+        id SERIAL PRIMARY KEY,
+        date DATE NOT NULL,
+        direction VARCHAR(10) NOT NULL,
+        entry_price FLOAT NOT NULL,
+        result VARCHAR(10) NOT NULL,
+        pnl_points FLOAT,
+        note TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
     # 【夥伴3】Threads 草稿表
     conn.run("""CREATE TABLE IF NOT EXISTS drafts (
         id SERIAL PRIMARY KEY,
@@ -720,6 +730,60 @@ def update_application(app_id):
         conn = get_db()
         conn.run("UPDATE applications SET status=:status WHERE id=:id", status=status, id=app_id)
         return jsonify({"ok":True})
+    except Exception as e:
+        return jsonify({"ok":False,"error":str(e)}),500
+
+# ─── 【訊號紀錄】API ──────────────────────────────────────
+
+@app.route('/api/signals', methods=['GET'])
+def get_signals():
+    limit = request.args.get('limit', 20, type=int)
+    try:
+        conn = get_db()
+        rows = conn.run("""SELECT id,date,direction,entry_price,result,pnl_points,note,created_at
+            FROM signals ORDER BY date DESC, created_at DESC LIMIT :limit""", limit=limit)
+        cols = ['id','date','direction','entry_price','result','pnl_points','note','created_at']
+        sigs = [dict(zip(cols,r)) for r in rows]
+        for s in sigs:
+            s['date'] = str(s['date'])
+            s['created_at'] = str(s['created_at'])
+        return jsonify({"ok":True,"signals":sigs})
+    except Exception as e:
+        return jsonify({"ok":False,"error":str(e)}),500
+
+@app.route('/api/signals', methods=['POST'])
+def add_signal():
+    if request.headers.get('X-Admin-Key') != ADMIN_KEY:
+        return jsonify({"ok":False,"error":"未授權"}),401
+    data = request.json
+    date = data.get('date','').strip()
+    direction = data.get('direction','').strip()
+    entry_price = data.get('entry_price')
+    result = data.get('result','').strip()
+    pnl_points = data.get('pnl_points')
+    note = data.get('note','').strip()
+    if not date or direction not in ('long','short') or not entry_price or result not in ('win','loss'):
+        return jsonify({"ok":False,"error":"請填入日期、方向、進場價、結果"}),400
+    try:
+        conn = get_db()
+        rows = conn.run("""INSERT INTO signals (date,direction,entry_price,result,pnl_points,note)
+            VALUES (:date,:direction,:entry_price,:result,:pnl_points,:note) RETURNING id,created_at""",
+            date=date, direction=direction, entry_price=float(entry_price),
+            result=result, pnl_points=float(pnl_points) if pnl_points is not None else None, note=note)
+        return jsonify({"ok":True,"id":rows[0][0],"created_at":str(rows[0][1])})
+    except Exception as e:
+        return jsonify({"ok":False,"error":str(e)}),500
+
+@app.route('/api/signals/stats', methods=['GET'])
+def get_signal_stats():
+    try:
+        conn = get_db()
+        rows = conn.run("SELECT COUNT(*),SUM(CASE WHEN result='win' THEN 1 ELSE 0 END),AVG(pnl_points) FROM signals")
+        total, wins, avg_pnl = rows[0]
+        total = total or 0; wins = wins or 0
+        win_rate = round((wins/total)*100, 1) if total > 0 else 0
+        return jsonify({"ok":True,"total":total,"wins":wins,"losses":total-wins,
+            "win_rate":win_rate,"avg_pnl":round(avg_pnl,1) if avg_pnl else 0})
     except Exception as e:
         return jsonify({"ok":False,"error":str(e)}),500
 

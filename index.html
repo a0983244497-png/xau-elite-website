@@ -197,6 +197,41 @@ footer { position: relative; z-index: 1; padding: 40px; text-align: center; bord
 .toast.show { opacity: 1; }
 .toast.error { border-color: var(--red); color: var(--red); }
 
+/* 草稿審閱 */
+.draft-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 10px; }
+.draft-card.approved { border-color: rgba(52,211,153,0.5); background: rgba(52,211,153,0.04); }
+.draft-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.draft-version { font-size: 11px; font-weight: 700; color: var(--gold); font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; }
+.draft-status-tag { font-size: 10px; padding: 2px 8px; border-radius: 4px; font-family: 'IBM Plex Mono', monospace; font-weight: 700; }
+.draft-status-pending { background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.3); color: #fbbf24; }
+.draft-status-approved { background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); color: var(--green); }
+.draft-status-rejected { background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.3); color: var(--red); }
+.draft-content { font-size: 13px; color: #c0c8d8; line-height: 1.75; margin-bottom: 12px; white-space: pre-wrap; }
+.draft-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.draft-btn { padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: 'IBM Plex Mono', monospace; transition: all 0.2s; }
+.draft-btn-copy { background: var(--gold-dim); border: 1px solid var(--border); color: var(--gold); }
+.draft-btn-approve { background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); color: var(--green); }
+.draft-btn-reject { background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.3); color: var(--red); }
+
+/* 訊號紀錄後台 */
+.signal-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.signal-input { background: var(--bg3); border: 1px solid rgba(201,168,76,0.2); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--text); outline: none; width: 100%; font-family: 'Noto Sans TC', sans-serif; }
+.signal-input:focus { border-color: var(--gold); }
+.signal-input option { background: var(--bg2); }
+.signal-stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+.signal-stat-box { background: var(--bg3); border-radius: 10px; padding: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center; }
+.signal-stat-val { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--gold); }
+.signal-stat-lbl { font-size: 10px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; margin-top: 4px; letter-spacing: 0.5px; }
+.signal-history { max-height: 200px; overflow-y: auto; }
+.signal-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 12px; }
+.signal-row:last-child { border-bottom: none; }
+.sig-dir-tag { padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
+.tag-long { background: rgba(52,211,153,0.12); color: var(--green); }
+.tag-short { background: rgba(248,113,113,0.12); color: var(--red); }
+.sig-result-tag { padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
+.tag-win { background: rgba(52,211,153,0.12); color: var(--green); }
+.tag-loss { background: rgba(248,113,113,0.12); color: var(--red); }
+
 /* RWD */
 @media (max-width: 768px) {
   nav { padding: 0 20px; }
@@ -327,9 +362,7 @@ footer { position: relative; z-index: 1; padding: 40px; text-align: center; bord
     <div class="side-card">
       <div class="side-header" data-zh="近期訊號紀錄" data-en="Recent Signals">近期訊號紀錄</div>
       <div class="signal-list" id="signalList">
-        <div class="signal-item"><div class="signal-dot long"></div><div class="signal-info"><div class="signal-title">XAU/USD 多單</div><div class="signal-time">2026-06-04 10:30</div></div><div class="signal-price">3,275.0</div></div>
-        <div class="signal-item"><div class="signal-dot short"></div><div class="signal-info"><div class="signal-title">XAU/USD 空單</div><div class="signal-time">2026-06-03 14:15</div></div><div class="signal-price">3,298.5</div></div>
-        <div class="signal-item"><div class="signal-dot long"></div><div class="signal-info"><div class="signal-title">XAU/USD 多單</div><div class="signal-time">2026-06-02 09:45</div></div><div class="signal-price">3,251.2</div></div>
+        <div style="color:var(--text-dim);font-size:12px;font-family:'IBM Plex Mono',monospace;text-align:center;padding:12px">載入中...</div>
       </div>
     </div>
 
@@ -468,6 +501,47 @@ footer { position: relative; z-index: 1; padding: 40px; text-align: center; bord
       <div id="applicationsList" style="font-size:12px;color:var(--text-dim)">載入中...</div>
       <button onclick="exportCSV()" style="margin-top:12px;padding:7px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-size:11px;cursor:pointer;font-family:'IBM Plex Mono',monospace;">匯出 CSV</button>
     </div>
+
+    <!-- 夥伴3：Threads 草稿審閱 -->
+    <div class="admin-card">
+      <div class="admin-card-title">💬 Threads 草稿審閱（夥伴3）</div>
+      <div class="admin-desc">今日自動生成的3版 Threads 草稿，複製後貼到 Threads 發文。<br><span style="color:var(--gold)">⏰ 自動排程：每天 08:00 台灣時間</span></div>
+      <button class="admin-trigger-btn" id="triggerP3Btn" onclick="triggerPartner3()">🎯 立即生成草稿</button>
+      <div class="result-box" id="p3Result"></div>
+      <div id="draftsContainer" style="margin-top:16px"></div>
+    </div>
+
+    <!-- 訊號勝敗紀錄 -->
+    <div class="admin-card">
+      <div class="admin-card-title">📊 訊號勝敗紀錄</div>
+      <div class="signal-stats-grid">
+        <div class="signal-stat-box"><div class="signal-stat-val" id="statWinRate">—</div><div class="signal-stat-lbl">勝率</div></div>
+        <div class="signal-stat-box"><div class="signal-stat-val" id="statTotal">—</div><div class="signal-stat-lbl">總筆數</div></div>
+        <div class="signal-stat-box"><div class="signal-stat-val" id="statAvgPnl">—</div><div class="signal-stat-lbl">平均盈虧</div></div>
+      </div>
+      <div class="signal-form">
+        <input type="date" id="sigDate" class="signal-input" style="grid-column:1/-1">
+        <select id="sigDirection" class="signal-input">
+          <option value="">方向...</option>
+          <option value="long">做多 ▲</option>
+          <option value="short">做空 ▼</option>
+        </select>
+        <input type="number" id="sigEntry" class="signal-input" placeholder="進場價 (e.g. 3315.5)" step="0.1">
+        <select id="sigResult" class="signal-input">
+          <option value="">結果...</option>
+          <option value="win">勝</option>
+          <option value="loss">敗</option>
+        </select>
+        <input type="number" id="sigPnl" class="signal-input" placeholder="盈虧點數 (e.g. 25)" step="0.1">
+        <input type="text" id="sigNote" class="signal-input" style="grid-column:1/-1" placeholder="備註（選填）">
+      </div>
+      <button class="admin-trigger-btn" onclick="addSignal()">＋ 新增訊號紀錄</button>
+      <div style="margin-top:16px">
+        <div style="font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;margin-bottom:8px;letter-spacing:0.5px">最近紀錄</div>
+        <div class="signal-history" id="signalHistory"><div style="font-size:12px;color:var(--text-dim);text-align:center;padding:8px">載入中...</div></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -483,7 +557,15 @@ function handleLogoClick(){
   if(logoClickCount>=5){ logoClickCount=0; const k=prompt('管理員密鑰：'); if(k) openAdmin(k); }
 }
 let adminKey='';
-function openAdmin(k){ adminKey=k; document.getElementById('adminPanel').style.display='block'; loadApplications(); }
+function openAdmin(k){
+  adminKey=k;
+  document.getElementById('adminPanel').style.display='block';
+  document.getElementById('sigDate').value=new Date().toISOString().split('T')[0];
+  loadApplications();
+  loadSignalStats();
+  loadSignalHistory();
+  loadAdminDrafts();
+}
 function closeAdmin(){ document.getElementById('adminPanel').style.display='none'; }
 
 // ── Toast ─────────────────────────────────────────────────
@@ -740,12 +822,171 @@ function exportCSV(){
   });
 }
 
+// ── 訊號紀錄（側欄） ──────────────────────────────────────
+async function loadSignals(){
+  try{
+    const res=await fetch('/api/signals?limit=5');
+    const data=await res.json();
+    const el=document.getElementById('signalList');
+    if(!data.ok||!data.signals||data.signals.length===0){
+      el.innerHTML='<div style="color:var(--text-dim);font-size:12px;font-family:\'IBM Plex Mono\',monospace;text-align:center;padding:12px">尚無訊號紀錄</div>';
+      return;
+    }
+    el.innerHTML=data.signals.map(s=>{
+      const dir=s.direction==='long'?'XAU/USD 多單':'XAU/USD 空單';
+      const dot=s.direction==='long'?'long':'short';
+      const rc=s.result==='win'?'var(--green)':'var(--red)';
+      const pnlStr=s.pnl_points!=null?`<div style="font-size:10px;color:${rc};font-family:'IBM Plex Mono',monospace">${s.pnl_points>0?'+':''}${s.pnl_points} pts</div>`:'';
+      return `<div class="signal-item">
+        <div class="signal-dot ${dot}"></div>
+        <div class="signal-info">
+          <div class="signal-title">${dir}</div>
+          <div class="signal-time">${s.date}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="signal-price">${s.entry_price!=null?s.entry_price.toFixed(1):'—'}</div>${pnlStr}
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){ console.warn('訊號載入失敗',e); }
+}
+
+// ── 後台：訊號管理 ────────────────────────────────────────
+async function loadSignalStats(){
+  try{
+    const res=await fetch('/api/signals/stats');
+    const data=await res.json();
+    if(!data.ok) return;
+    const wrEl=document.getElementById('statWinRate');
+    const pnlEl=document.getElementById('statAvgPnl');
+    wrEl.textContent=data.win_rate+'%';
+    wrEl.style.color=data.win_rate>=50?'var(--green)':'var(--red)';
+    document.getElementById('statTotal').textContent=data.total;
+    pnlEl.textContent=(data.avg_pnl>0?'+':'')+data.avg_pnl;
+    pnlEl.style.color=data.avg_pnl>=0?'var(--green)':'var(--red)';
+  }catch(e){}
+}
+
+async function loadSignalHistory(){
+  try{
+    const res=await fetch('/api/signals?limit=10');
+    const data=await res.json();
+    const el=document.getElementById('signalHistory');
+    if(!data.ok||!data.signals||data.signals.length===0){
+      el.innerHTML='<div style="font-size:12px;color:var(--text-dim);text-align:center;padding:8px">尚無紀錄</div>';
+      return;
+    }
+    el.innerHTML=data.signals.map(s=>`
+      <div class="signal-row">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);min-width:72px">${s.date}</span>
+        <span class="sig-dir-tag ${s.direction==='long'?'tag-long':'tag-short'}">${s.direction==='long'?'多':'空'}</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--gold);flex:1">${s.entry_price!=null?s.entry_price.toFixed(1):'—'}</span>
+        <span class="sig-result-tag ${s.result==='win'?'tag-win':'tag-loss'}">${s.result==='win'?'勝':'敗'}</span>
+        ${s.pnl_points!=null?`<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:${s.pnl_points>=0?'var(--green)':'var(--red)'}">${s.pnl_points>0?'+':''}${s.pnl_points}</span>`:''}
+      </div>`).join('');
+  }catch(e){}
+}
+
+async function addSignal(){
+  const date=document.getElementById('sigDate').value;
+  const direction=document.getElementById('sigDirection').value;
+  const entry=document.getElementById('sigEntry').value;
+  const result=document.getElementById('sigResult').value;
+  const pnl=document.getElementById('sigPnl').value;
+  const note=document.getElementById('sigNote').value;
+  if(!date||!direction||!entry||!result){ showToast('請填入日期、方向、進場價、結果',true); return; }
+  try{
+    const r=await fetch('/api/signals',{
+      method:'POST',
+      headers:{'X-Admin-Key':adminKey,'Content-Type':'application/json'},
+      body:JSON.stringify({date,direction,entry_price:parseFloat(entry),result,pnl_points:pnl?parseFloat(pnl):null,note})
+    });
+    const data=await r.json();
+    if(data.ok){
+      showToast('✅ 訊號紀錄已新增！');
+      ['sigDirection','sigEntry','sigResult','sigPnl','sigNote'].forEach(id=>{ document.getElementById(id).value=''; });
+      document.getElementById('sigDate').value=new Date().toISOString().split('T')[0];
+      loadSignalStats(); loadSignalHistory(); loadSignals();
+    }else{ showToast('新增失敗：'+data.error,true); }
+  }catch(e){ showToast('網路錯誤',true); }
+}
+
+// ── 後台：夥伴3 草稿 ──────────────────────────────────────
+let _draftContents={};
+
+async function triggerPartner3(){
+  const btn=document.getElementById('triggerP3Btn');
+  const res=document.getElementById('p3Result');
+  btn.disabled=true; btn.textContent='⏳ 生成中...';
+  res.style.display='block'; res.style.color='var(--text-dim)'; res.textContent='正在呼叫 Claude API 生成草稿...';
+  try{
+    const r=await fetch('/api/drafts/trigger',{method:'POST',headers:{'X-Admin-Key':adminKey}});
+    const data=await r.json();
+    if(data.ok){ res.style.color='var(--green)'; res.textContent='✅ 草稿已生成！'; showToast('✅ Threads 草稿已生成！'); loadAdminDrafts(); }
+    else{ res.style.color='var(--red)'; res.textContent='❌ '+data.error; showToast(data.error,true); }
+  }catch(e){ res.style.color='var(--red)'; res.textContent='❌ 網路錯誤'; }
+  finally{ btn.disabled=false; btn.textContent='🎯 立即生成草稿'; }
+}
+
+async function loadAdminDrafts(){
+  try{
+    const res=await fetch('/api/drafts/latest');
+    const data=await res.json();
+    const container=document.getElementById('draftsContainer');
+    if(!data.ok||!data.drafts||data.drafts.length===0){
+      container.innerHTML='<div style="font-size:12px;color:var(--text-dim);font-family:\'IBM Plex Mono\',monospace;text-align:center;padding:8px">尚無草稿，點上方按鈕生成</div>';
+      return;
+    }
+    _draftContents={};
+    data.drafts.forEach(d=>{ _draftContents[d.id]=d.content; });
+    const styleNames={hook:'V1 Hook型',educational:'V2 教學型',personal:'V3 個人觀點'};
+    const statusCls={pending:'draft-status-pending',approved:'draft-status-approved',rejected:'draft-status-rejected'};
+    const statusLbl={pending:'PENDING',approved:'✓ APPROVED',rejected:'✕ REJECTED'};
+    let html='';
+    if(data.date) html+=`<div style="font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;margin-bottom:10px">📅 ${data.date} 草稿</div>`;
+    html+=data.drafts.map(d=>`
+      <div class="draft-card ${d.status==='approved'?'approved':''}" id="draft-${d.id}">
+        <div class="draft-card-header">
+          <span class="draft-version">${styleNames[d.style]||'V'+d.version}</span>
+          <span class="draft-status-tag ${statusCls[d.status]||'draft-status-pending'}" id="dstatus-${d.id}">${statusLbl[d.status]||d.status}</span>
+        </div>
+        <div class="draft-content">${d.content}</div>
+        <div class="draft-actions">
+          <button class="draft-btn draft-btn-copy" onclick="copyDraft(${d.id})">📋 複製</button>
+          <button class="draft-btn draft-btn-approve" onclick="updateDraftStatus(${d.id},'approved')">✓ 核准</button>
+          <button class="draft-btn draft-btn-reject" onclick="updateDraftStatus(${d.id},'rejected')">✕ 拒絕</button>
+        </div>
+      </div>`).join('');
+    container.innerHTML=html;
+  }catch(e){ console.warn('草稿載入失敗',e); }
+}
+
+function copyDraft(id){
+  const text=_draftContents[id];
+  if(!text){ showToast('找不到草稿內容',true); return; }
+  navigator.clipboard.writeText(text).then(()=>showToast('✅ 已複製到剪貼簿！')).catch(()=>showToast('複製失敗',true));
+}
+
+async function updateDraftStatus(id,status){
+  try{
+    const r=await fetch(`/api/drafts/${id}`,{
+      method:'PATCH',
+      headers:{'X-Admin-Key':adminKey,'Content-Type':'application/json'},
+      body:JSON.stringify({status})
+    });
+    const data=await r.json();
+    if(data.ok){ showToast(status==='approved'?'✅ 已核准':'已拒絕'); loadAdminDrafts(); }
+    else showToast('操作失敗：'+data.error,true);
+  }catch(e){ showToast('操作失敗',true); }
+}
+
 // ── 初始化 ────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
   setTodayDate();
   loadTodayAnalysis();
   loadMarketArticles();
   loadStrategyArticles();
+  loadSignals();
 });
 </script>
 </body>
