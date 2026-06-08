@@ -61,6 +61,17 @@ def init_db():
         is_published BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    # 【素材收集】
+    conn.run("""CREATE TABLE IF NOT EXISTS feed_items (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(500) NOT NULL,
+        summary TEXT,
+        url VARCHAR(1000),
+        source VARCHAR(100),
+        category VARCHAR(20) DEFAULT 'trading',
+        collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_read BOOLEAN DEFAULT FALSE,
+        is_selected BOOLEAN DEFAULT FALSE)""")
     # 【訊號紀錄】
     conn.run("""CREATE TABLE IF NOT EXISTS signals (
         id SERIAL PRIMARY KEY,
@@ -387,6 +398,148 @@ def run_partner3_drafts():
     except Exception as e:
         print(f"夥伴3儲存失敗: {e}")
 
+# ─── 素材收集爬蟲 ─────────────────────────────────────────
+
+def fetch_finnhub_news():
+    try:
+        res = requests.get(
+            f"https://finnhub.io/api/v1/news?category=forex&token={FINNHUB_KEY}", timeout=10)
+        data = res.json()
+        kw = ['gold','xau','fed','dollar','inflation','rate','treasury']
+        items = [n for n in data if n.get('headline') and
+                 any(k in n['headline'].lower() for k in kw)][:10]
+        return [{"title": n['headline'][:500],
+                 "summary": (n.get('summary') or '')[:400],
+                 "url": n.get('url',''),
+                 "source": "Finnhub",
+                 "category": "trading"} for n in items]
+    except Exception as e:
+        print(f"Finnhub 新聞失敗: {e}")
+        return []
+
+def fetch_hackernews():
+    try:
+        import xml.etree.ElementTree as ET
+        res = requests.get("https://news.ycombinator.com/rss", timeout=10,
+                           headers={'User-Agent': 'Mozilla/5.0'})
+        root = ET.fromstring(res.text)
+        items = []
+        for item in root.findall('./channel/item')[:10]:
+            title = (item.findtext('title') or '').strip()
+            link  = (item.findtext('link')  or '').strip()
+            if title:
+                items.append({"title": title[:500], "summary": "",
+                              "url": link, "source": "HackerNews", "category": "life"})
+        return items
+    except Exception as e:
+        print(f"HackerNews 失敗: {e}")
+        return []
+
+def fetch_ptt_hot():
+    try:
+        session = requests.Session()
+        session.cookies.set('over18', '1', domain='www.ptt.cc')
+        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
+        res = session.get("https://www.ptt.cc/bbs/Gossiping/index.json",
+                          timeout=10, headers=headers)
+        data = res.json()
+        items = []
+        for post in data.get('items', [])[:15]:
+            title = (post.get('title') or '').strip()
+            if not title or title.startswith('Re:'):
+                continue
+            href = post.get('href') or post.get('link','')
+            items.append({
+                "title": title[:500],
+                "summary": f"作者：{post.get('author','')} | 日期：{post.get('date','')}",
+                "url": f"https://www.ptt.cc{href}" if href else "",
+                "source": "PTT八卦",
+                "category": "mix"
+            })
+            if len(items) >= 10:
+                break
+        return items
+    except Exception as e:
+        print(f"PTT 失敗: {e}")
+        return []
+
+def generate_threads_drafts_from_feed(market_data, feed_items_list):
+    if not ANTHROPIC_KEY:
+        return []
+    xau = market_data["xau_price"]
+    xau_chg = market_data["xau_change_pct"]
+    feed_text = "\n".join([f"- [{it['source']}] {it['title']}" for it in feed_items_list[:10]])
+    direction = "上漲" if xau_chg > 0 else "下跌"
+    prompt = f"""你是 Gino 老師，根據以下素材和今日黃金行情，寫3個 Threads 貼文草稿。
+
+【今日黃金】{xau} USD（{direction} {abs(xau_chg):.2f}%）
+
+【今日素材】
+{feed_text}
+
+風格參考：
+「溫馨提醒：今晚注意黃金 4485、4500 這兩個位子，跌下去就不看他了🤣 剩下按照自己策略進行 謝謝各位。」
+
+規則：口語、短句、數字直接標、結尾互動句、emoji 自然帶1-2個、250字以內、繁體中文
+可引用素材中的觀點或熱點話題，連結到黃金交易或個人成長
+
+只回傳 JSON（不要 markdown）：
+{{
+  "drafts": [
+    {{"version": 1, "style": "hook", "content": "..."}},
+    {{"version": 2, "style": "educational", "content": "..."}},
+    {{"version": 3, "style": "personal", "content": "..."}}
+  ]
+}}"""
+    try:
+        msg = get_claude().messages.create(
+            model="claude-sonnet-4-6", max_tokens=1000,
+            system="只回傳純 JSON，不要任何 markdown 或說明文字。",
+            messages=[{"role":"user","content":prompt}])
+        text = msg.content[0].text.replace('```json','').replace('```','').strip()
+        result = json.loads(text)
+        return result.get('drafts', [])
+    except Exception as e:
+        print(f"素材草稿生成失敗: {e}")
+        return []
+
+def run_feed_collection():
+    print("=== 素材收集：開始 ===")
+    all_items = []
+    all_items.extend(fetch_finnhub_news())
+    all_items.extend(fetch_hackernews())
+    all_items.extend(fetch_ptt_hot())
+    if not all_items:
+        print("素材收集：無結果")
+        return 0
+    try:
+        conn = get_db()
+        today = datetime.now().strftime('%Y-%m-%d')
+        existing = conn.run(
+            "SELECT url FROM feed_items WHERE collected_at::date=:today AND url IS NOT NULL",
+            today=today)
+        existing_urls = {r[0] for r in existing}
+        count = 0
+        for item in all_items:
+            url = (item.get('url') or '')[:1000]
+            if url and url in existing_urls:
+                continue
+            conn.run("""INSERT INTO feed_items (title,summary,url,source,category)
+                VALUES (:title,:summary,:url,:source,:category)""",
+                title=item['title'][:500],
+                summary=(item.get('summary') or '')[:500],
+                url=url,
+                source=(item.get('source') or '')[:100],
+                category=item.get('category','trading'))
+            if url:
+                existing_urls.add(url)
+            count += 1
+        print(f"素材收集完成：{count} 篇新文章")
+        return count
+    except Exception as e:
+        print(f"素材儲存失敗: {e}")
+        return 0
+
 _last_run = {}
 
 def _ran_today(job):
@@ -411,6 +564,13 @@ def scheduler():
                     _mark_ran('partner4')
                     threading.Thread(target=run_partner4_article, daemon=True).start()
                     print("排程啟動：夥伴4")
+
+            # UTC 23:00–23:04 = 台北時間 07:00（素材收集，每天）
+            if h == 23 and m < 5:
+                if not _ran_today('feed_collection'):
+                    _mark_ran('feed_collection')
+                    threading.Thread(target=run_feed_collection, daemon=True).start()
+                    print("排程啟動：素材收集")
 
             # UTC 22:00–22:04 = 台北時間 06:00（每日結構分析，週一至週五）
             if h == 22 and m < 5 and wd < 5:
@@ -784,6 +944,100 @@ def get_signal_stats():
         win_rate = round((wins/total)*100, 1) if total > 0 else 0
         return jsonify({"ok":True,"total":total,"wins":wins,"losses":total-wins,
             "win_rate":win_rate,"avg_pnl":round(avg_pnl,1) if avg_pnl else 0})
+    except Exception as e:
+        return jsonify({"ok":False,"error":str(e)}),500
+
+# ─── 【素材收集】Feed API ─────────────────────────────────
+
+@app.route('/api/feed', methods=['GET'])
+def get_feed():
+    date = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
+    category = request.args.get('category')
+    try:
+        conn = get_db()
+        if category:
+            rows = conn.run("""SELECT id,title,summary,url,source,category,
+                collected_at,is_read,is_selected
+                FROM feed_items WHERE collected_at::date=:date AND category=:cat
+                ORDER BY is_selected DESC, collected_at DESC""", date=date, cat=category)
+        else:
+            rows = conn.run("""SELECT id,title,summary,url,source,category,
+                collected_at,is_read,is_selected
+                FROM feed_items WHERE collected_at::date=:date
+                ORDER BY is_selected DESC, collected_at DESC""", date=date)
+        cols = ['id','title','summary','url','source','category',
+                'collected_at','is_read','is_selected']
+        items = [dict(zip(cols,r)) for r in rows]
+        for it in items:
+            it['collected_at'] = str(it['collected_at'])
+        return jsonify({"ok":True,"items":items,"date":date,"count":len(items)})
+    except Exception as e:
+        return jsonify({"ok":False,"error":str(e)}),500
+
+@app.route('/api/feed/collect', methods=['POST'])
+def trigger_feed_collect():
+    if request.headers.get('X-Admin-Key') != ADMIN_KEY:
+        return jsonify({"ok":False,"error":"未授權"}),401
+    try:
+        count = run_feed_collection()
+        return jsonify({"ok":True,"count":count})
+    except Exception as e:
+        return jsonify({"ok":False,"error":str(e)}),500
+
+@app.route('/api/feed/<int:item_id>/select', methods=['PATCH'])
+def select_feed_item(item_id):
+    if request.headers.get('X-Admin-Key') != ADMIN_KEY:
+        return jsonify({"ok":False,"error":"未授權"}),401
+    selected = request.json.get('is_selected', True)
+    try:
+        conn = get_db()
+        conn.run("UPDATE feed_items SET is_selected=:sel WHERE id=:id",
+                 sel=selected, id=item_id)
+        return jsonify({"ok":True})
+    except Exception as e:
+        return jsonify({"ok":False,"error":str(e)}),500
+
+@app.route('/api/feed/to-draft', methods=['POST'])
+def feed_to_draft():
+    if request.headers.get('X-Admin-Key') != ADMIN_KEY:
+        return jsonify({"ok":False,"error":"未授權"}),401
+    data_req = request.json or {}
+    item_ids = data_req.get('item_ids', [])
+    date = data_req.get('date', datetime.now().strftime('%Y-%m-%d'))
+    try:
+        conn = get_db()
+        if item_ids:
+            rows = []
+            for iid in item_ids[:15]:
+                r = conn.run("""SELECT id,title,summary,url,source,category
+                    FROM feed_items WHERE id=:id""", id=int(iid))
+                if r:
+                    rows.extend(r)
+        else:
+            rows = conn.run("""SELECT id,title,summary,url,source,category
+                FROM feed_items WHERE collected_at::date=:date AND is_selected=TRUE
+                LIMIT 15""", date=date)
+        cols = ['id','title','summary','url','source','category']
+        items = [dict(zip(cols,r)) for r in rows]
+        if not items:
+            return jsonify({"ok":False,"error":"沒有選取的素材"}),400
+        market_data = fetch_market_data_yfinance()
+        drafts = generate_threads_drafts_from_feed(market_data, items)
+        if not drafts:
+            return jsonify({"ok":False,"error":"草稿生成失敗"}),500
+        today = datetime.now().strftime('%Y-%m-%d')
+        saved = []
+        for d in drafts:
+            r = conn.run("""INSERT INTO drafts
+                (date,version,style,content,xau_price,xau_change_pct)
+                VALUES (:date,:version,:style,:content,:xau,:xau_chg)
+                RETURNING id""",
+                date=today, version=d['version'], style=d['style'],
+                content=d['content'], xau=market_data['xau_price'],
+                xau_chg=market_data['xau_change_pct'])
+            saved.append({"id":r[0][0],"version":d['version'],
+                          "style":d['style'],"content":d['content']})
+        return jsonify({"ok":True,"message":f"已生成 {len(saved)} 個草稿","drafts":saved})
     except Exception as e:
         return jsonify({"ok":False,"error":str(e)}),500
 

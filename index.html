@@ -213,6 +213,22 @@ footer { position: relative; z-index: 1; padding: 40px; text-align: center; bord
 .draft-btn-approve { background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); color: var(--green); }
 .draft-btn-reject { background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.3); color: var(--red); }
 
+/* 素材收集 */
+.feed-item { display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+.feed-item:last-child { border-bottom:none; }
+.feed-checkbox { width:16px; height:16px; accent-color:var(--gold); cursor:pointer; margin-top:2px; flex-shrink:0; }
+.feed-info { flex:1; min-width:0; }
+.feed-title { font-size:13px; color:var(--text); line-height:1.45; margin-bottom:4px; cursor:pointer; transition:color 0.2s; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.feed-title:hover { color:var(--gold); }
+.feed-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.feed-source { font-size:10px; font-family:'IBM Plex Mono',monospace; color:var(--text-dim); }
+.feed-cat-tag { font-size:9px; padding:1px 6px; border-radius:3px; font-weight:700; font-family:'IBM Plex Mono',monospace; }
+.feed-cat-trading { background:rgba(201,168,76,0.12); border:1px solid rgba(201,168,76,0.2); color:var(--gold); }
+.feed-cat-life { background:rgba(96,165,250,0.12); border:1px solid rgba(96,165,250,0.2); color:var(--blue); }
+.feed-cat-mix { background:rgba(248,113,113,0.12); border:1px solid rgba(248,113,113,0.2); color:var(--red); }
+.feed-tab { padding:4px 12px !important; }
+.feed-tab.active { background:var(--gold-dim) !important; border-color:var(--gold) !important; color:var(--gold) !important; }
+
 /* 訊號紀錄後台 */
 .signal-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
 .signal-input { background: var(--bg3); border: 1px solid rgba(201,168,76,0.2); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--text); outline: none; width: 100%; font-family: 'Noto Sans TC', sans-serif; }
@@ -542,6 +558,25 @@ footer { position: relative; z-index: 1; padding: 40px; text-align: center; bord
       </div>
     </div>
 
+    <!-- 今日素材收集 -->
+    <div class="admin-card">
+      <div class="admin-card-title">📰 今日素材收集</div>
+      <div class="admin-desc">每天 07:00 自動從 Finnhub（黃金新聞）、HackerNews（科技話題）、PTT 八卦板收集素材。<br>勾選素材後可直接生成 Threads 草稿。<br><span style="color:var(--gold)">⏰ 自動排程：每天 07:00 台灣時間</span></div>
+      <button class="admin-trigger-btn" id="triggerFeedBtn" onclick="triggerFeedCollect()">🔍 立即收集素材</button>
+      <div class="result-box" id="feedResult"></div>
+      <div style="display:flex;gap:8px;margin:14px 0 10px;flex-wrap:wrap">
+        <button class="draft-btn draft-btn-copy feed-tab active" data-cat="all" onclick="filterFeed('all',this)">全部</button>
+        <button class="draft-btn draft-btn-copy feed-tab" data-cat="trading" onclick="filterFeed('trading',this)">📈 黃金新聞</button>
+        <button class="draft-btn draft-btn-copy feed-tab" data-cat="life" onclick="filterFeed('life',this)">💡 科技話題</button>
+        <button class="draft-btn draft-btn-copy feed-tab" data-cat="mix" onclick="filterFeed('mix',this)">🔥 PTT熱門</button>
+      </div>
+      <div id="feedContainer" style="max-height:380px;overflow-y:auto"></div>
+      <div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span id="feedSelectedCount" style="font-size:12px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;flex-shrink:0">已選 0 篇</span>
+        <button class="admin-publish-btn" style="flex:1;margin:0" onclick="generateFromFeed()">✨ 用選取素材生成草稿</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -565,6 +600,7 @@ function openAdmin(k){
   loadSignalStats();
   loadSignalHistory();
   loadAdminDrafts();
+  loadFeedItems();
 }
 function closeAdmin(){ document.getElementById('adminPanel').style.display='none'; }
 
@@ -978,6 +1014,103 @@ async function updateDraftStatus(id,status){
     if(data.ok){ showToast(status==='approved'?'✅ 已核准':'已拒絕'); loadAdminDrafts(); }
     else showToast('操作失敗：'+data.error,true);
   }catch(e){ showToast('操作失敗',true); }
+}
+
+// ── 後台：素材收集 ────────────────────────────────────────
+let _feedItems=[], _feedFilter='all';
+
+async function triggerFeedCollect(){
+  const btn=document.getElementById('triggerFeedBtn');
+  const res=document.getElementById('feedResult');
+  btn.disabled=true; btn.textContent='⏳ 收集中...';
+  res.style.display='block'; res.style.color='var(--text-dim)';
+  res.textContent='正在抓取 Finnhub / HackerNews / PTT...';
+  try{
+    const r=await fetch('/api/feed/collect',{method:'POST',headers:{'X-Admin-Key':adminKey}});
+    const data=await r.json();
+    if(data.ok){
+      res.style.color='var(--green)';
+      res.textContent=`✅ 完成！新增 ${data.count} 篇素材`;
+      showToast(`✅ 收集完成，新增 ${data.count} 篇`);
+      loadFeedItems();
+    }else{ res.style.color='var(--red)'; res.textContent='❌ '+data.error; showToast(data.error,true); }
+  }catch(e){ res.style.color='var(--red)'; res.textContent='❌ 網路錯誤'; }
+  finally{ btn.disabled=false; btn.textContent='🔍 立即收集素材'; }
+}
+
+async function loadFeedItems(){
+  try{
+    const today=new Date().toISOString().split('T')[0];
+    const res=await fetch('/api/feed?date='+today);
+    const data=await res.json();
+    _feedItems=data.ok?(data.items||[]):[];
+    renderFeedItems();
+  }catch(e){ console.warn('素材載入失敗',e); }
+}
+
+function filterFeed(cat,btn){
+  _feedFilter=cat;
+  document.querySelectorAll('.feed-tab').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderFeedItems();
+}
+
+function renderFeedItems(){
+  const container=document.getElementById('feedContainer');
+  const filtered=_feedFilter==='all'?_feedItems:_feedItems.filter(it=>it.category===_feedFilter);
+  if(!filtered.length){
+    container.innerHTML='<div style="font-size:12px;color:var(--text-dim);text-align:center;padding:16px">尚無素材，點上方按鈕收集</div>';
+    _updateFeedCount(); return;
+  }
+  const catCls={trading:'feed-cat-trading',life:'feed-cat-life',mix:'feed-cat-mix'};
+  const catLbl={trading:'黃金',life:'科技',mix:'PTT'};
+  container.innerHTML=filtered.map(it=>`
+    <div class="feed-item">
+      <input type="checkbox" class="feed-checkbox" ${it.is_selected?'checked':''}
+        onchange="toggleFeedItem(${it.id},this.checked)">
+      <div class="feed-info">
+        <div class="feed-title" onclick="if('${it.url||''}')window.open('${it.url||'#'}','_blank')">${it.title}</div>
+        <div class="feed-meta">
+          <span class="feed-source">${it.source}</span>
+          <span class="feed-cat-tag ${catCls[it.category]||'feed-cat-trading'}">${catLbl[it.category]||it.category}</span>
+        </div>
+      </div>
+    </div>`).join('');
+  _updateFeedCount();
+}
+
+function _updateFeedCount(){
+  const n=_feedItems.filter(it=>it.is_selected).length;
+  document.getElementById('feedSelectedCount').textContent='已選 '+n+' 篇';
+}
+
+async function toggleFeedItem(id,selected){
+  const item=_feedItems.find(it=>it.id===id);
+  if(item) item.is_selected=selected;
+  _updateFeedCount();
+  try{
+    await fetch('/api/feed/'+id+'/select',{
+      method:'PATCH',
+      headers:{'X-Admin-Key':adminKey,'Content-Type':'application/json'},
+      body:JSON.stringify({is_selected:selected})
+    });
+  }catch(e){}
+}
+
+async function generateFromFeed(){
+  const selected=_feedItems.filter(it=>it.is_selected);
+  if(!selected.length){ showToast('請先勾選素材',true); return; }
+  showToast('⏳ 草稿生成中...');
+  try{
+    const r=await fetch('/api/feed/to-draft',{
+      method:'POST',
+      headers:{'X-Admin-Key':adminKey,'Content-Type':'application/json'},
+      body:JSON.stringify({item_ids:selected.map(it=>it.id)})
+    });
+    const data=await r.json();
+    if(data.ok){ showToast('✅ '+data.message); loadAdminDrafts(); }
+    else showToast('生成失敗：'+data.error,true);
+  }catch(e){ showToast('網路錯誤',true); }
 }
 
 // ── 初始化 ────────────────────────────────────────────────
