@@ -111,6 +111,18 @@ nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba
 
 .disclaimer { text-align: center; font-size: 11px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; margin-top: 24px; line-height: 1.7; }
 
+.articles-section { margin-top: 24px; }
+.articles-section-title { font-family: 'Playfair Display', serif; font-size: 15px; color: var(--gold); margin-bottom: 14px; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+.article-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 20px 24px; margin-bottom: 12px; transition: border-color 0.2s; }
+.article-card:hover { border-color: rgba(201,168,76,0.4); }
+.article-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.article-date { font-size: 11px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; }
+.article-badge { font-size: 10px; padding: 2px 8px; border-radius: 4px; background: var(--gold-dim); border: 1px solid var(--border); color: var(--gold); font-family: 'IBM Plex Mono', monospace; }
+.article-title { font-size: 15px; font-weight: 600; color: #f0f4ff; margin-bottom: 8px; line-height: 1.4; }
+.article-content { font-size: 13px; color: #b0b8cc; line-height: 1.8; }
+.article-prices { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+.article-price-tag { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--text-dim); }
+
 @media(max-width:768px){
   nav{padding:0 16px}
   .container{padding:80px 16px 40px}
@@ -187,6 +199,14 @@ nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba
     <div class="card full-width">
       <div class="card-header"><div class="card-title">🌍 總經背景分析</div></div>
       <div class="card-body" id="macroBody"><div class="loading"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div></div>
+    </div>
+  </div>
+
+  <!-- 市場分析文章區塊 -->
+  <div class="articles-section" id="articlesSection" style="display:none">
+    <div class="articles-section-title">📝 最新市場分析文章</div>
+    <div id="articlesBody">
+      <div class="loading"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>
     </div>
   </div>
 
@@ -341,6 +361,36 @@ function renderAnalysis(data) {
   `;
 }
 
+async function loadArticles() {
+  try {
+    const res = await fetch('/api/articles?per_page=3');
+    const data = await res.json();
+    if (!data.ok || !data.articles || data.articles.length === 0) return;
+    document.getElementById('articlesSection').style.display = 'block';
+    document.getElementById('articlesBody').innerHTML = data.articles.map(a => {
+      const dt = new Date(a.published_at);
+      const dateStr = dt.toLocaleDateString('zh-TW', {year:'numeric', month:'long', day:'numeric'});
+      const xauDir = a.xau_change_pct >= 0 ? '+' : '';
+      const xauColor = a.xau_change_pct >= 0 ? '#34d399' : '#f87171';
+      return `<div class="article-card">
+        <div class="article-meta">
+          <span class="article-date">${dateStr}</span>
+          <span class="article-badge">XAU/USD</span>
+        </div>
+        <div class="article-title">${a.title}</div>
+        <div class="article-content">${(a.content||'').replace(/\n/g,'<br>')}</div>
+        <div class="article-prices">
+          <span class="article-price-tag">黃金 <span style="color:var(--gold)">${a.xau_price!=null?a.xau_price.toFixed(2):'—'}</span> USD</span>
+          <span class="article-price-tag">漲跌 <span style="color:${xauColor}">${xauDir}${a.xau_change_pct!=null?a.xau_change_pct.toFixed(2):'—'}%</span></span>
+          <span class="article-price-tag">DXY <span style="color:var(--text)">${a.dxy_price!=null?a.dxy_price.toFixed(3):'—'}</span></span>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error('文章載入失敗', e);
+  }
+}
+
 // 初始載入
 const today = new Date();
 const todayStr = today.toISOString().split('T')[0];
@@ -350,6 +400,7 @@ threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 document.getElementById('customDate').min = threeMonthsAgo.toISOString().split('T')[0];
 
 loadByDate('today', document.getElementById('btnToday'));
+loadArticles();
 </script>
 </body>
 </html>

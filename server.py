@@ -61,6 +61,17 @@ def init_db():
         is_published BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+    # 【夥伴3】Threads 草稿表
+    conn.run("""CREATE TABLE IF NOT EXISTS drafts (
+        id SERIAL PRIMARY KEY,
+        date DATE DEFAULT CURRENT_DATE,
+        version INTEGER NOT NULL,
+        style VARCHAR(50) DEFAULT 'standard',
+        content TEXT NOT NULL,
+        xau_price FLOAT,
+        xau_change_pct FLOAT,
+        status VARCHAR(20) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
 
 try:
     init_db()
@@ -171,16 +182,26 @@ def generate_market_article(market_data):
     dxy = market_data["dxy_price"]
     dxy_chg = market_data["dxy_change_pct"]
     today = datetime.now().strftime("%Y年%m月%d日")
-    prompt = f"""你是專業貴金屬分析師，撰寫給台灣投資人的市場分析文章。
-【{today} 數據】黃金：{xau} USD（{'上漲' if xau_chg>0 else '下跌'} {abs(xau_chg):.2f}%）美元指數：{dxy}（{'走強' if dxy_chg>0 else '走弱'} {abs(dxy_chg):.3f}%）
-要求：200-250字繁體中文，結構：行情→相關性分析→短線觀點，最後附支撐或壓力價位。
+    direction = "上漲" if xau_chg > 0 else "下跌"
+    prompt = f"""你是 Gino 老師，用口語化、有溫度的繁體中文寫今日黃金市場分析給台灣投資人看。
+
+【{today} 數據】
+黃金：{xau} USD（{direction} {abs(xau_chg):.2f}%）
+美元指數：{dxy}（{'走強' if dxy_chg>0 else '走弱'} {abs(dxy_chg):.3f}%）
+
+要求：
+- 250字以內
+- Gino 講師風格：口語、短句、直接報關鍵位、結尾有互動感
+- 結構：今日行情→黃金美元關係→短線看法＋關鍵價位
+- 繁體中文，自然帶入 emoji（不超過2個）
+
 格式：
 標題：[標題]
 正文：
 [正文]"""
     try:
         msg = get_claude().messages.create(
-            model="claude-sonnet-4-20250514", max_tokens=600,
+            model="claude-sonnet-4-6", max_tokens=600,
             messages=[{"role":"user","content":prompt}])
         raw = msg.content[0].text.strip()
         title, content_lines, in_content = "", [], False
@@ -193,6 +214,52 @@ def generate_market_article(market_data):
     except Exception as e:
         print(f"文章生成失敗: {e}")
         return {"title": f"黃金市場分析 {today}", "content": f"黃金現貨報 {xau} 美元，請關注後續走勢。"}
+
+def generate_threads_drafts(market_data):
+    if not ANTHROPIC_KEY:
+        return []
+    xau = market_data["xau_price"]
+    xau_chg = market_data["xau_change_pct"]
+    dxy = market_data["dxy_price"]
+    direction = "上漲" if xau_chg > 0 else "下跌"
+    sup1 = round(xau - 15, 1)
+    sup2 = round(xau - 35, 1)
+    res1 = round(xau + 15, 1)
+    res2 = round(xau + 35, 1)
+    prompt = f"""你是 Gino 老師，在 Threads 分享黃金交易觀點給台灣投資人。
+
+【今日數據】黃金：{xau} USD（今日{direction} {abs(xau_chg):.2f}%）美元指數：{dxy}
+參考支撐：{sup1}、{sup2}｜參考壓力：{res1}、{res2}
+
+風格參考（請模仿以下語氣和句型）：
+「溫馨提醒：今晚注意黃金 4485、4500 這兩個位子，跌下去就不看他了🤣 剩下按照自己策略進行 謝謝各位。」
+「明天黃金先看戲再決定，目前我先觀察行情有沒有反彈到 4337、4366 再決定要做多做空🙃🙃🙃」
+
+風格規則：口語、短句、數字直接標、結尾互動句、emoji 自然帶1-2個、250字以內、繁體中文
+
+只回傳 JSON（不要 markdown）：
+{{
+  "drafts": [
+    {{"version": 1, "style": "hook", "content": "..."}},
+    {{"version": 2, "style": "educational", "content": "..."}},
+    {{"version": 3, "style": "personal", "content": "..."}}
+  ]
+}}
+
+V1 hook：開頭衝擊，直接點出今日關鍵價位，結尾呼籲互動
+V2 educational：用 Gino 口吻解釋黃金美元關係，帶一個操作提醒
+V3 personal：第一人稱，像在和朋友說今天怎麼看這個行情"""
+    try:
+        msg = get_claude().messages.create(
+            model="claude-sonnet-4-6", max_tokens=1000,
+            system="只回傳純 JSON，不要任何 markdown 或說明文字。",
+            messages=[{"role":"user","content":prompt}])
+        text = msg.content[0].text.replace('```json','').replace('```','').strip()
+        result = json.loads(text)
+        return result.get('drafts', [])
+    except Exception as e:
+        print(f"草稿生成失敗: {e}")
+        return []
 
 # ─── 【夥伴2】策略筆記整理 ──────────────────────────────
 
@@ -290,28 +357,62 @@ def run_partner4_article():
     except Exception as e:
         print(f"夥伴4儲存失敗: {e}")
 
+def run_partner3_drafts():
+    print("=== 夥伴3：生成 Threads 草稿 ===")
+    market_data = fetch_market_data_yfinance()
+    drafts = generate_threads_drafts(market_data)
+    if not drafts:
+        print("夥伴3：草稿生成失敗")
+        return
+    try:
+        conn = get_db()
+        today = datetime.now().strftime('%Y-%m-%d')
+        for d in drafts:
+            conn.run("""INSERT INTO drafts (date,version,style,content,xau_price,xau_change_pct)
+                VALUES (:date,:version,:style,:content,:xau_price,:xau_change_pct)""",
+                date=today, version=d['version'], style=d['style'],
+                content=d['content'], xau_price=market_data['xau_price'],
+                xau_change_pct=market_data['xau_change_pct'])
+        print(f"夥伴3草稿儲存：{today}，共 {len(drafts)} 篇")
+    except Exception as e:
+        print(f"夥伴3儲存失敗: {e}")
+
+_last_run = {}
+
+def _ran_today(job):
+    return _last_run.get(job) == datetime.utcnow().strftime('%Y-%m-%d')
+
+def _mark_ran(job):
+    _last_run[job] = datetime.utcnow().strftime('%Y-%m-%d')
+
 def scheduler():
     while True:
-        now_utc = datetime.utcnow()
-        weekday = now_utc.weekday()
-        jobs_today = []
-        if weekday < 5:
-            t_daily = now_utc.replace(hour=22, minute=0, second=0, microsecond=0)
-            if now_utc < t_daily: jobs_today.append((t_daily, "daily_analysis"))
-        if weekday in (0, 2, 4):
-            t_p4 = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
-            if now_utc < t_p4: jobs_today.append((t_p4, "partner4"))
-        if jobs_today:
-            jobs_today.sort(key=lambda x: x[0])
-            next_time, job_name = jobs_today[0]
-            wait_sec = (next_time - now_utc).total_seconds()
-            print(f"下次任務：{job_name} @ {next_time} UTC")
-            time.sleep(max(wait_sec, 1))
-            if job_name == "daily_analysis": run_daily_analysis()
-            elif job_name == "partner4": run_partner4_article()
-        else:
-            tomorrow = (now_utc + timedelta(days=1)).replace(hour=0,minute=0,second=0,microsecond=0)
-            time.sleep(max((tomorrow - now_utc).total_seconds(), 60))
+        try:
+            now = datetime.utcnow()
+            h, m, wd = now.hour, now.minute, now.weekday()
+
+            # UTC 00:00–00:04 = 台北時間 08:00（夥伴3/夥伴4）
+            if h == 0 and m < 5:
+                if not _ran_today('partner3'):
+                    _mark_ran('partner3')
+                    threading.Thread(target=run_partner3_drafts, daemon=True).start()
+                    print("排程啟動：夥伴3")
+                if wd in (0, 2, 4) and not _ran_today('partner4'):
+                    _mark_ran('partner4')
+                    threading.Thread(target=run_partner4_article, daemon=True).start()
+                    print("排程啟動：夥伴4")
+
+            # UTC 22:00–22:04 = 台北時間 06:00（每日結構分析，週一至週五）
+            if h == 22 and m < 5 and wd < 5:
+                if not _ran_today('daily_analysis'):
+                    _mark_ran('daily_analysis')
+                    threading.Thread(target=run_daily_analysis, daemon=True).start()
+                    print("排程啟動：每日分析")
+
+        except Exception as e:
+            print(f"排程錯誤: {e}")
+
+        time.sleep(60)
 
 scheduler_thread = threading.Thread(target=scheduler, daemon=True)
 scheduler_thread.start()
@@ -421,6 +522,77 @@ def trigger_partner4():
         rows = conn.run("SELECT id,title,published_at FROM market_articles ORDER BY published_at DESC LIMIT 1")
         latest = {"id":rows[0][0],"title":rows[0][1],"published_at":str(rows[0][2])} if rows else None
         return jsonify({"ok":True,"message":"夥伴4任務完成","article":latest})
+    except Exception as e:
+        return jsonify({"ok":False,"error":str(e)}),500
+
+# ─── 【夥伴3】Threads 草稿 API ───────────────────────────
+
+@app.route('/api/drafts', methods=['GET'])
+def get_drafts():
+    date = request.args.get('date')
+    try:
+        conn = get_db()
+        if date:
+            rows = conn.run("""SELECT id,date,version,style,content,xau_price,xau_change_pct,status,created_at
+                FROM drafts WHERE date=:date ORDER BY version""", date=date)
+        else:
+            rows = conn.run("""SELECT id,date,version,style,content,xau_price,xau_change_pct,status,created_at
+                FROM drafts ORDER BY created_at DESC LIMIT 30""")
+        cols = ['id','date','version','style','content','xau_price','xau_change_pct','status','created_at']
+        drafts_list = [dict(zip(cols,r)) for r in rows]
+        for d in drafts_list:
+            d['date'] = str(d['date'])
+            d['created_at'] = str(d['created_at'])
+        return jsonify({"ok":True,"drafts":drafts_list})
+    except Exception as e:
+        return jsonify({"ok":False,"error":str(e)}),500
+
+@app.route('/api/drafts/latest', methods=['GET'])
+def get_latest_drafts():
+    try:
+        conn = get_db()
+        rows = conn.run("""SELECT id,date,version,style,content,xau_price,xau_change_pct,status,created_at
+            FROM drafts WHERE date=(SELECT MAX(date) FROM drafts) ORDER BY version""")
+        if not rows:
+            return jsonify({"ok":False,"error":"尚無草稿"}),404
+        cols = ['id','date','version','style','content','xau_price','xau_change_pct','status','created_at']
+        drafts_list = [dict(zip(cols,r)) for r in rows]
+        for d in drafts_list:
+            d['date'] = str(d['date'])
+            d['created_at'] = str(d['created_at'])
+        return jsonify({"ok":True,"drafts":drafts_list,"date":drafts_list[0]['date']})
+    except Exception as e:
+        return jsonify({"ok":False,"error":str(e)}),500
+
+@app.route('/api/drafts/trigger', methods=['POST'])
+def trigger_partner3():
+    if request.headers.get('X-Admin-Key') != ADMIN_KEY:
+        return jsonify({"ok":False,"error":"未授權"}),401
+    try:
+        run_partner3_drafts()
+        conn = get_db()
+        rows = conn.run("""SELECT id,date,version,style,content,status,created_at
+            FROM drafts WHERE date=(SELECT MAX(date) FROM drafts) ORDER BY version""")
+        cols = ['id','date','version','style','content','status','created_at']
+        drafts_list = [dict(zip(cols,r)) for r in rows]
+        for d in drafts_list:
+            d['date'] = str(d['date'])
+            d['created_at'] = str(d['created_at'])
+        return jsonify({"ok":True,"message":"夥伴3任務完成","drafts":drafts_list})
+    except Exception as e:
+        return jsonify({"ok":False,"error":str(e)}),500
+
+@app.route('/api/drafts/<int:draft_id>', methods=['PATCH'])
+def update_draft(draft_id):
+    if request.headers.get('X-Admin-Key') != ADMIN_KEY:
+        return jsonify({"ok":False,"error":"未授權"}),401
+    status = request.json.get('status')
+    if status not in ['approved','rejected','pending']:
+        return jsonify({"ok":False,"error":"無效狀態"}),400
+    try:
+        conn = get_db()
+        conn.run("UPDATE drafts SET status=:status WHERE id=:id", status=status, id=draft_id)
+        return jsonify({"ok":True})
     except Exception as e:
         return jsonify({"ok":False,"error":str(e)}),500
 
