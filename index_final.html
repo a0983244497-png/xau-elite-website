@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XAU Elite | 黃金現貨交易訊號</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #c9a84c; --gold-light: #e8c97a; --gold-dim: rgba(201,168,76,0.15);
+  --bg: #080b12; --bg2: #0d1220; --bg3: #111827;
+  --border: rgba(201,168,76,0.2); --text: #e8eaf0; --text-dim: #6b7a99;
+  --green: #34d399; --red: #f87171; --blue: #60a5fa;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans TC', sans-serif; min-height: 100vh; overflow-x: hidden; }
+body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse 80% 50% at 20% 20%, rgba(201,168,76,0.04) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 80% 80%, rgba(96,165,250,0.03) 0%, transparent 50%); pointer-events: none; z-index: 0; }
+
+/* NAV */
+nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(8,11,18,0.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); padding: 0 40px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
+.nav-logo { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--gold); letter-spacing: 2px; text-decoration: none; cursor: pointer; }
+.nav-logo span { color: var(--text-dim); font-weight: 400; font-size: 13px; margin-left: 8px; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; }
+.nav-right { display: flex; align-items: center; gap: 24px; }
+.lang-switch { display: flex; gap: 4px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 3px; }
+.lang-btn { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; background: transparent; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; transition: all 0.2s; }
+.lang-btn.active { background: var(--gold-dim); color: var(--gold); }
+.nav-apply-btn { padding: 8px 20px; background: var(--gold-dim); border: 1px solid var(--border); border-radius: 8px; color: var(--gold); font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Noto Sans TC', sans-serif; transition: all 0.2s; text-decoration: none; }
+.nav-apply-btn:hover { background: rgba(201,168,76,0.25); }
+
+/* HERO */
+.hero { position: relative; z-index: 1; padding: 140px 40px 80px; max-width: 1100px; margin: 0 auto; }
+.hero-tag { display: inline-flex; align-items: center; gap: 8px; background: var(--gold-dim); border: 1px solid var(--border); border-radius: 20px; padding: 6px 16px; font-size: 11px; font-weight: 600; color: var(--gold); font-family: 'IBM Plex Mono', monospace; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 28px; }
+.hero-tag::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+.hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(36px,5vw,64px); font-weight: 900; line-height: 1.1; color: #f0f4ff; margin-bottom: 20px; }
+.hero h1 .gold-text { color: var(--gold); display: block; }
+.hero p { font-size: 16px; color: var(--text-dim); line-height: 1.7; max-width: 520px; margin-bottom: 40px; }
+.hero-cta { display: flex; gap: 16px; flex-wrap: wrap; }
+.btn-primary { padding: 14px 32px; background: linear-gradient(135deg, var(--gold), #a07830); border: none; border-radius: 10px; color: #080b12; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Noto Sans TC', sans-serif; transition: all 0.2s; text-decoration: none; display: inline-block; }
+.btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+.btn-secondary { padding: 14px 32px; background: transparent; border: 1px solid var(--border); border-radius: 10px; color: var(--gold); font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Noto Sans TC', sans-serif; transition: all 0.2s; text-decoration: none; display: inline-block; }
+.btn-secondary:hover { background: var(--gold-dim); }
+
+/* STATS BAR */
+.stats-bar { position: relative; z-index: 1; background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 20px 40px; }
+.stats-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; }
+.stat-item { text-align: center; cursor: default; }
+.stat-val { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--gold); margin-bottom: 4px; }
+.stat-label { font-size: 11px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; text-transform: uppercase; }
+
+/* 市場分析區塊 */
+.articles-section { position: relative; z-index: 1; padding: 48px 40px 0; max-width: 1100px; margin: 0 auto; }
+.section-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 24px; }
+.section-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #f0f4ff; margin-bottom: 4px; }
+.section-sub { font-size: 11px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.5px; }
+.section-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--gold-dim); border: 1px solid var(--border); border-radius: 20px; padding: 5px 14px; font-size: 11px; font-weight: 600; color: var(--gold); font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; }
+.ai-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: blink 2s infinite; }
+.article-featured { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 28px 32px; margin-bottom: 16px; min-height: 120px; }
+.article-featured-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.article-date { font-size: 11px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; }
+.article-market-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.market-tag { padding: 2px 8px; background: var(--bg3); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px; font-size: 10px; font-family: 'IBM Plex Mono', monospace; color: var(--text-dim); }
+.market-tag .up { color: var(--green); font-weight: 600; }
+.market-tag .down { color: var(--red); font-weight: 600; }
+.article-featured-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: #f0f4ff; margin-bottom: 14px; line-height: 1.3; }
+.article-featured-content { font-size: 14px; color: #b0b8cc; line-height: 1.85; }
+.article-no-data { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; padding: 12px 0; }
+.article-list { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+.article-item { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+.article-item:hover { border-color: rgba(201,168,76,0.45); }
+.article-item-date { font-size: 10px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; margin-bottom: 6px; }
+.article-item-title { font-size: 13px; font-weight: 600; color: #e0e4f0; line-height: 1.45; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.article-item-preview { font-size: 11px; color: var(--text-dim); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* MAIN CONTENT */
+.main { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 48px 40px; display: grid; grid-template-columns: 1fr 340px; gap: 32px; align-items: start; }
+
+/* 今日分析卡片 */
+.analysis-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.card-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.card-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: #f0f4ff; }
+.card-date { font-size: 11px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; }
+.card-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
+.badge-long { background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); color: var(--green); }
+.badge-short { background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.3); color: var(--red); }
+.badge-watch { background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.3); color: #fbbf24; }
+.analysis-img-area { width: 100%; background: var(--bg3); border-bottom: 1px solid var(--border); display: none; }
+.analysis-img-area img { width: 100%; display: block; border-radius: 0; }
+.analysis-img-placeholder { width: 100%; aspect-ratio: 16/9; background: var(--bg3); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--text-dim); font-size: 13px; font-family: 'IBM Plex Mono', monospace; border-bottom: 1px solid var(--border); }
+.analysis-body { padding: 24px; }
+.analysis-text { font-size: 14px; line-height: 1.8; color: #b0b8cc; margin-bottom: 20px; }
+.key-levels { background: var(--bg3); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 16px 20px; }
+.levels-title { font-size: 11px; font-weight: 600; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; }
+.level-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px; }
+.level-row:last-child { border-bottom: none; }
+.level-name { color: var(--text-dim); }
+.level-val { font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+.level-val.up { color: var(--green); }
+.level-val.down { color: var(--red); }
+.level-val.neutral { color: var(--gold); }
+
+/* 側欄 */
+.sidebar { display: flex; flex-direction: column; gap: 20px; }
+.side-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.side-header { padding: 16px 20px; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; text-transform: uppercase; }
+
+/* 策略文章卡片（夥伴2） */
+.strategy-card { padding: 20px; }
+.strategy-article { padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.strategy-article:last-child { border-bottom: none; padding-bottom: 0; }
+.strategy-cat { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+.cat-timezone { background: rgba(96,165,250,0.12); border: 1px solid rgba(96,165,250,0.25); color: var(--blue); }
+.cat-profit { background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.25); color: var(--green); }
+.cat-general { background: var(--gold-dim); border: 1px solid var(--border); color: var(--gold); }
+.strategy-title { font-size: 13px; font-weight: 700; color: #e8eaf0; margin-bottom: 6px; line-height: 1.4; }
+.strategy-summary { font-size: 11px; color: var(--text-dim); line-height: 1.65; }
+.strategy-empty { font-size: 12px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; text-align: center; padding: 16px 0; }
+
+/* 訊號列表 */
+.signal-list { padding: 12px; }
+.signal-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px; border-radius: 8px; margin-bottom: 4px; transition: background 0.2s; }
+.signal-item:last-child { margin-bottom: 0; }
+.signal-item:hover { background: var(--bg3); }
+.signal-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+.signal-dot.long { background: var(--green); }
+.signal-dot.short { background: var(--red); }
+.signal-info { flex: 1; }
+.signal-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.signal-time { font-size: 11px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; }
+.signal-price { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: var(--gold); }
+
+/* 展開文章 Modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(8,11,18,0.9); z-index: 150; overflow-y: auto; padding: 40px 20px; }
+.modal-overlay.show { display: flex; align-items: flex-start; justify-content: center; }
+.modal-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; max-width: 680px; width: 100%; padding: 32px; position: relative; margin: auto; }
+.modal-close { position: absolute; top: 20px; right: 20px; width: 32px; height: 32px; border-radius: 6px; background: var(--bg3); border: 1px solid var(--border); color: var(--text-dim); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+.modal-cat { font-size: 10px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+.modal-title { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; color: #f0f4ff; margin-bottom: 16px; line-height: 1.3; }
+.modal-summary { background: var(--bg3); border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05); }
+.modal-summary-title { font-size: 10px; font-weight: 700; color: var(--gold); font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+.modal-summary-points { font-size: 13px; color: #b0b8cc; line-height: 1.8; }
+.modal-content { font-size: 14px; color: #b0b8cc; line-height: 1.9; white-space: pre-wrap; }
+
+/* APPLY */
+.apply-section { position: relative; z-index: 1; background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 80px 40px; text-align: center; }
+.apply-inner { max-width: 560px; margin: 0 auto; }
+.apply-inner h2 { font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 700; color: #f0f4ff; margin-bottom: 16px; }
+.apply-inner p { font-size: 14px; color: var(--text-dim); line-height: 1.7; margin-bottom: 36px; }
+.apply-form { background: var(--bg3); border: 1px solid var(--border); border-radius: 16px; padding: 28px; text-align: left; }
+.form-title { font-size: 14px; font-weight: 700; color: var(--gold); margin-bottom: 20px; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 11px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; margin-bottom: 6px; letter-spacing: 0.5px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; background: var(--bg2); border: 1px solid rgba(201,168,76,0.2); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--text); font-family: 'Noto Sans TC', sans-serif; outline: none; transition: border-color 0.2s; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--gold); }
+.form-group textarea { resize: vertical; min-height: 80px; }
+.form-group select option { background: var(--bg2); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-submit { width: 100%; padding: 13px; background: linear-gradient(135deg, var(--gold), #a07830); border: none; border-radius: 10px; color: #080b12; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Noto Sans TC', sans-serif; margin-top: 8px; transition: opacity 0.2s; }
+.form-submit:hover { opacity: 0.85; }
+.form-note { font-size: 11px; color: var(--text-dim); text-align: center; margin-top: 12px; font-family: 'IBM Plex Mono', monospace; }
+.success-msg { display: none; text-align: center; padding: 20px; }
+.success-msg .check { font-size: 40px; margin-bottom: 12px; }
+.success-msg h3 { font-size: 16px; font-weight: 700; color: var(--green); margin-bottom: 8px; }
+
+/* FOOTER */
+footer { position: relative; z-index: 1; padding: 40px; text-align: center; border-top: 1px solid var(--border); }
+.footer-logo { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--gold); letter-spacing: 2px; margin-bottom: 12px; }
+.footer-text { font-size: 12px; color: var(--text-dim); font-family: 'IBM Plex Mono', monospace; }
+
+/* ADMIN */
+.admin-panel { display: none; position: fixed; inset: 0; background: rgba(8,11,18,0.97); z-index: 200; overflow-y: auto; padding: 40px; }
+.admin-inner { max-width: 720px; margin: 0 auto; }
+.admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+.admin-title { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; color: var(--gold); }
+.admin-close { width: 36px; height: 36px; border-radius: 8px; background: var(--bg3); border: 1px solid var(--border); color: var(--text-dim); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+.admin-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+.admin-card-title { font-size: 13px; font-weight: 600; color: var(--gold); font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px; }
+.admin-desc { font-size: 12px; color: var(--text-dim); line-height: 1.6; margin-bottom: 16px; }
+.admin-trigger-btn { width: 100%; padding: 12px; background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); border-radius: 10px; color: var(--green); font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Noto Sans TC', sans-serif; transition: all 0.2s; margin-top: 8px; }
+.admin-trigger-btn:hover { background: rgba(52,211,153,0.2); }
+.admin-trigger-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.admin-publish-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, var(--gold), #a07830); border: none; border-radius: 10px; color: #080b12; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Noto Sans TC', sans-serif; margin-top: 8px; }
+.direction-select { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 14px; }
+.dir-option { padding: 9px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg3); color: var(--text-dim); font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.2s; font-family: 'Noto Sans TC', sans-serif; }
+.dir-option.sel-long { background: rgba(52,211,153,0.15); border-color: rgba(52,211,153,0.4); color: var(--green); }
+.dir-option.sel-short { background: rgba(248,113,113,0.15); border-color: rgba(248,113,113,0.4); color: var(--red); }
+.dir-option.sel-watch { background: rgba(251,191,36,0.15); border-color: rgba(251,191,36,0.4); color: #fbbf24; }
+.cat-select { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 14px; }
+.cat-option { padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg3); color: var(--text-dim); font-size: 11px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.2s; font-family: 'IBM Plex Mono', monospace; }
+.cat-option.sel { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+.result-box { margin-top: 12px; font-size: 12px; font-family: 'IBM Plex Mono', monospace; display: none; padding: 10px 14px; border-radius: 8px; background: var(--bg3); }
+
+/* TOAST */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--bg3); border: 1px solid var(--green); color: var(--green); padding: 10px 24px; border-radius: 8px; font-size: 13px; font-family: 'IBM Plex Mono', monospace; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; white-space: nowrap; }
+.toast.show { opacity: 1; }
+.toast.error { border-color: var(--red); color: var(--red); }
+
+/* RWD */
+@media (max-width: 768px) {
+  nav { padding: 0 20px; }
+  .hero { padding: 100px 20px 60px; }
+  .stats-bar { padding: 16px 20px; }
+  .stats-inner { grid-template-columns: repeat(2,1fr); }
+  .articles-section { padding: 32px 20px 0; }
+  .section-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .article-featured { padding: 20px; }
+  .article-list { grid-template-columns: 1fr; }
+  .main { padding: 32px 20px; grid-template-columns: 1fr; }
+  .apply-section { padding: 60px 20px; }
+  footer { padding: 30px 20px; }
+  .admin-panel { padding: 20px; }
+  .form-row { grid-template-columns: 1fr; }
+  .modal-box { padding: 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" onclick="handleLogoClick()">XAU ELITE <span>GOLD SIGNALS</span></a>
+  <div class="nav-right">
+    <div class="lang-switch">
+      <button class="lang-btn active" onclick="setLang('zh')" id="langZH">中文</button>
+      <button class="lang-btn" onclick="setLang('en')" id="langEN">EN</button>
+    </div>
+    <a href="#apply" class="nav-apply-btn" data-zh="申請加入" data-en="Apply Now">申請加入</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-tag" data-zh="每日黃金現貨交易訊號" data-en="Daily XAU/USD Trade Signals">每日黃金現貨交易訊號</div>
+  <h1>
+    <span data-zh="精準交易，" data-en="Precision Trading,">精準交易，</span>
+    <span class="gold-text" data-zh="掌握黃金節奏" data-en="Master the Gold Rhythm">掌握黃金節奏</span>
+  </h1>
+  <p data-zh="基於多時區結構分析，提供每日 XAU/USD 黃金現貨交易訊號。大時區定方向，M15 精準進場，紀律執行才有穩定獲利。" data-en="Multi-timeframe structure analysis providing daily XAU/USD spot gold signals. Higher timeframe direction, M15 precision entry — discipline leads to consistent gains.">基於多時區結構分析，提供每日 XAU/USD 黃金現貨交易訊號。大時區定方向，M15 精準進場，紀律執行才有穩定獲利。</p>
+  <div class="hero-cta">
+    <a href="/daily.html" class="btn-primary" data-zh="📈 今日日內分析" data-en="📈 Daily Analysis">📈 今日日內分析</a>
+    <a href="/analyzer.html" class="btn-secondary" data-zh="🔍 破框分析工具" data-en="🔍 Breakout Analyzer">🔍 破框分析工具</a>
+    <a href="#apply" class="btn-secondary" data-zh="申請加入" data-en="Apply to Join">申請加入</a>
+  </div>
+</section>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div class="stat-item">
+      <div class="stat-val">200+</div>
+      <div class="stat-label" data-zh="活躍學員" data-en="Active Members">活躍學員</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">XAU</div>
+      <div class="stat-label" data-zh="專注品種" data-en="Focus Pair">專注品種</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">3時區</div>
+      <div class="stat-label" data-zh="時區影響判斷" data-en="Session Analysis">時區影響判斷</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">階梯停利</div>
+      <div class="stat-label" data-zh="停利規則執行" data-en="Profit Rules">停利規則執行</div>
+    </div>
+  </div>
+</div>
+
+<!-- 市場分析區塊（夥伴4） -->
+<section class="articles-section" id="market-articles">
+  <div class="section-header">
+    <div>
+      <div class="section-title" data-zh="市場分析" data-en="Market Analysis">市場分析</div>
+      <div class="section-sub" data-zh="每週一、三、五 08:00 自動更新" data-en="Auto-updated Mon/Wed/Fri 8AM">每週一、三、五 08:00 自動更新</div>
+    </div>
+    <div class="section-badge"><span class="ai-dot"></span><span data-zh="AI 自動生成" data-en="AI Generated">AI 自動生成</span></div>
+  </div>
+  <div class="article-featured" id="articleFeatured">
+    <div class="article-featured-meta">
+      <span class="article-date" id="articleDate">—</span>
+      <div class="article-market-tags" id="articleTags"></div>
+    </div>
+    <div class="article-featured-title" id="articleTitle">載入中...</div>
+    <div class="article-featured-content" id="articleContent">正在取得最新市場分析...</div>
+    <div class="article-no-data" id="articleNoData" style="display:none">
+      <span>📭</span><span>尚無分析文章，等待週一三五 08:00 自動生成</span>
+    </div>
+  </div>
+  <div class="article-list" id="articleList"></div>
+</section>
+
+<!-- MAIN -->
+<section class="main" id="analysis">
+
+  <!-- 今日分析 -->
+  <div class="analysis-card">
+    <div class="card-header">
+      <div>
+        <div class="card-title" data-zh="今日分析" data-en="Today's Analysis">今日分析</div>
+        <div class="card-date" id="todayDate"></div>
+      </div>
+      <span class="card-badge badge-long" id="directionBadge">多方偏向</span>
+    </div>
+    <div class="analysis-img-area" id="analysisImgArea"></div>
+    <div class="analysis-img-placeholder" id="analysisImgPlaceholder">
+      <div style="font-size:32px;opacity:0.3">📊</div>
+      <span data-zh="今日分析圖表（後台上傳）" data-en="Today's Chart (Admin Upload)">今日分析圖表（後台上傳）</span>
+    </div>
+    <div class="analysis-body">
+      <div class="analysis-text" id="analysisText">今日分析尚未發布，請稍後再回來查看。</div>
+      <div class="key-levels">
+        <div class="levels-title" data-zh="今日關鍵位" data-en="Key Levels">今日關鍵位</div>
+        <div class="level-row"><span class="level-name" data-zh="上方大壓" data-en="Resistance">上方大壓</span><span class="level-val neutral" id="lvl-res">—</span></div>
+        <div class="level-row"><span class="level-name" data-zh="TP1 目標" data-en="TP1">TP1 目標</span><span class="level-val up" id="lvl-tp1">—</span></div>
+        <div class="level-row"><span class="level-name" data-zh="進場觸發" data-en="Entry">進場觸發</span><span class="level-val neutral" id="lvl-entry">—</span></div>
+        <div class="level-row"><span class="level-name" data-zh="停損基準" data-en="Stop Loss">停損基準</span><span class="level-val down" id="lvl-sl">—</span></div>
+        <div class="level-row"><span class="level-name" data-zh="下方大撐" data-en="Support">下方大撐</span><span class="level-val neutral" id="lvl-sup">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 側欄 -->
+  <div class="sidebar">
+
+    <!-- 近期訊號 -->
+    <div class="side-card">
+      <div class="side-header" data-zh="近期訊號紀錄" data-en="Recent Signals">近期訊號紀錄</div>
+      <div class="signal-list" id="signalList">
+        <div class="signal-item"><div class="signal-dot long"></div><div class="signal-info"><div class="signal-title">XAU/USD 多單</div><div class="signal-time">2026-06-04 10:30</div></div><div class="signal-price">3,275.0</div></div>
+        <div class="signal-item"><div class="signal-dot short"></div><div class="signal-info"><div class="signal-title">XAU/USD 空單</div><div class="signal-time">2026-06-03 14:15</div></div><div class="signal-price">3,298.5</div></div>
+        <div class="signal-item"><div class="signal-dot long"></div><div class="signal-info"><div class="signal-title">XAU/USD 多單</div><div class="signal-time">2026-06-02 09:45</div></div><div class="signal-price">3,251.2</div></div>
+      </div>
+    </div>
+
+    <!-- 策略文章（夥伴2）：時區影響 -->
+    <div class="side-card" id="strategyTimezoneCard">
+      <div class="side-header" data-zh="時區影響" data-en="Session Impact">時區影響</div>
+      <div class="strategy-card" id="strategyTimezoneBody">
+        <div class="strategy-empty">載入中...</div>
+      </div>
+    </div>
+
+    <!-- 策略文章（夥伴2）：停利規則 -->
+    <div class="side-card" id="strategyProfitCard">
+      <div class="side-header" data-zh="停利規則" data-en="Profit Rules">停利規則</div>
+      <div class="strategy-card" id="strategyProfitBody">
+        <div class="strategy-empty">載入中...</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- APPLY -->
+<section class="apply-section" id="apply">
+  <div class="apply-inner">
+    <h2 data-zh="申請加入" data-en="Apply to Join">申請加入</h2>
+    <p data-zh="填寫申請表後，我們將在 24 小時內審核並通知您。核准後即可查看每日分析與訊號。" data-en="Submit your application and we'll review within 24 hours. Once approved, you'll have full access.">填寫申請表後，我們將在 24 小時內審核並通知您。核准後即可查看每日分析與訊號。</p>
+    <div class="apply-form" id="applyForm">
+      <div class="form-title">▸ 申請表單</div>
+      <div class="form-row">
+        <div class="form-group"><label>姓名</label><input type="text" id="applyName" placeholder="Your name"></div>
+        <div class="form-group"><label>Telegram</label><input type="text" id="applyTelegram" placeholder="@username"></div>
+      </div>
+      <div class="form-group"><label>Email</label><input type="email" id="applyEmail" placeholder="your@email.com"></div>
+      <div class="form-group"><label>交易經驗</label>
+        <select id="applyExp">
+          <option value="">請選擇...</option>
+          <option value="beginner">新手（&lt; 1年）</option>
+          <option value="intermediate">有經驗（1-3年）</option>
+          <option value="advanced">老手（3年以上）</option>
+        </select>
+      </div>
+      <div class="form-group"><label>申請原因</label><textarea id="applyReason" placeholder="簡短說明為什麼想加入..."></textarea></div>
+      <button class="form-submit" onclick="submitApplication()">送出申請</button>
+      <div class="form-note">審核通常在 24 小時內完成</div>
+    </div>
+    <div class="success-msg" id="successMsg">
+      <div class="check">✅</div>
+      <h3>申請已送出！</h3>
+      <p>我們將在 24 小時內審核並通知您。</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">XAU ELITE</div>
+  <div class="footer-text">© 2026 XAU Elite · Gold Signals · All Rights Reserved</div>
+</footer>
+
+<!-- 策略文章展開 Modal -->
+<div class="modal-overlay" id="strategyModal">
+  <div class="modal-box">
+    <div class="modal-close" onclick="closeModal()">✕</div>
+    <div class="modal-cat" id="modalCat"></div>
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-summary">
+      <div class="modal-summary-title">重點摘要</div>
+      <div class="modal-summary-points" id="modalSummary"></div>
+    </div>
+    <div class="modal-content" id="modalContent"></div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="admin-panel" id="adminPanel">
+  <div class="admin-inner">
+    <div class="admin-header">
+      <div class="admin-title">⚙️ 後台管理</div>
+      <div class="admin-close" onclick="closeAdmin()">✕</div>
+    </div>
+
+    <!-- 夥伴4 -->
+    <div class="admin-card">
+      <div class="admin-card-title">🤖 市場分析文章（夥伴4）</div>
+      <div class="admin-desc">手動觸發 AI 生成最新市場分析（XAU/USD + DXY），生成後自動顯示在首頁。<br><span style="color:var(--gold)">⏰ 自動排程：週一、三、五 08:00 台灣時間</span></div>
+      <button class="admin-trigger-btn" id="triggerP4Btn" onclick="triggerPartner4()">✨ 立即生成市場分析</button>
+      <div class="result-box" id="p4Result"></div>
+    </div>
+
+    <!-- 夥伴2 -->
+    <div class="admin-card">
+      <div class="admin-card-title">📝 策略筆記整理（夥伴2）</div>
+      <div class="admin-desc">貼上你的分析筆記，Claude 自動整理成結構化文章，顯示在首頁側欄。</div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;margin-bottom:6px;letter-spacing:0.5px">文章分類</div>
+        <div class="cat-select">
+          <div class="cat-option sel" id="cat-timezone" onclick="selectCat('timezone')">🕐 時區影響</div>
+          <div class="cat-option" id="cat-profit" onclick="selectCat('profit')">📈 停利規則</div>
+          <div class="cat-option" id="cat-general" onclick="selectCat('general')">📋 一般策略</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>貼上你的分析筆記</label>
+        <textarea id="strategyNotes" style="min-height:140px;width:100%;background:var(--bg3);border:1px solid rgba(201,168,76,0.2);border-radius:8px;padding:12px;font-size:13px;color:var(--text);font-family:'Noto Sans TC',sans-serif;outline:none;resize:vertical" placeholder="把你的交易筆記、策略想法貼在這裡，Claude 會自動整理成文章..."></textarea>
+      </div>
+      <button class="admin-trigger-btn" id="triggerP2Btn" onclick="triggerPartner2()">🧠 AI 整理並發布</button>
+      <div class="result-box" id="p2Result"></div>
+    </div>
+
+    <!-- 今日分析 -->
+    <div class="admin-card">
+      <div class="admin-card-title">📊 發布今日分析</div>
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;margin-bottom:8px;">方向</div>
+        <div class="direction-select">
+          <div class="dir-option" id="dir-long" onclick="selectDir('bullish')">▲ 做多</div>
+          <div class="dir-option" id="dir-short" onclick="selectDir('bearish')">▼ 做空</div>
+          <div class="dir-option" id="dir-watch" onclick="selectDir('neutral')">◉ 觀望</div>
+        </div>
+      </div>
+      <div class="form-group"><label>分析摘要</label><textarea id="adminBias" style="width:100%;background:var(--bg3);border:1px solid rgba(201,168,76,0.2);border-radius:8px;padding:10px;font-size:13px;color:var(--text);outline:none;resize:vertical;min-height:80px" placeholder="今日偏見說明..."></textarea></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-group"><label>上方大壓</label><input type="number" id="adminRes" style="width:100%;background:var(--bg3);border:1px solid rgba(201,168,76,0.2);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none" placeholder="例：3350"></div>
+        <div class="form-group"><label>下方大撐</label><input type="number" id="adminSup" style="width:100%;background:var(--bg3);border:1px solid rgba(201,168,76,0.2);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none" placeholder="例：3290"></div>
+        <div class="form-group"><label>進場觸發</label><input type="number" id="adminEntry" style="width:100%;background:var(--bg3);border:1px solid rgba(201,168,76,0.2);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none" placeholder="例：3318"></div>
+        <div class="form-group"><label>停損基準</label><input type="number" id="adminSL" style="width:100%;background:var(--bg3);border:1px solid rgba(201,168,76,0.2);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none" placeholder="例：3298"></div>
+      </div>
+      <div class="form-group"><label>TP1 目標</label><input type="number" id="adminTP1" style="width:100%;background:var(--bg3);border:1px solid rgba(201,168,76,0.2);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none" placeholder="例：3335"></div>
+      <button class="admin-publish-btn" onclick="publishAnalysis()">發布今日分析</button>
+    </div>
+
+    <!-- 申請名單 -->
+    <div class="admin-card">
+      <div class="admin-card-title">📋 申請名單</div>
+      <div id="applicationsList" style="font-size:12px;color:var(--text-dim)">載入中...</div>
+      <button onclick="exportCSV()" style="margin-top:12px;padding:7px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-size:11px;cursor:pointer;font-family:'IBM Plex Mono',monospace;">匯出 CSV</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── 後台解鎖 ──────────────────────────────────────────────
+let logoClickCount=0, logoClickTimer=null;
+function handleLogoClick(){
+  logoClickCount++;
+  if(logoClickTimer) clearTimeout(logoClickTimer);
+  logoClickTimer = setTimeout(()=>{ logoClickCount=0; }, 3000);
+  if(logoClickCount>=5){ logoClickCount=0; const k=prompt('管理員密鑰：'); if(k) openAdmin(k); }
+}
+let adminKey='';
+function openAdmin(k){ adminKey=k; document.getElementById('adminPanel').style.display='block'; loadApplications(); }
+function closeAdmin(){ document.getElementById('adminPanel').style.display='none'; }
+
+// ── Toast ─────────────────────────────────────────────────
+function showToast(msg, err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(err?' error':'');
+  setTimeout(()=>{ t.className='toast'; },3000);
+}
+
+// ── 語言切換 ──────────────────────────────────────────────
+function setLang(lang){
+  document.getElementById('langZH').className='lang-btn'+(lang==='zh'?' active':'');
+  document.getElementById('langEN').className='lang-btn'+(lang==='en'?' active':'');
+  document.querySelectorAll('[data-zh]').forEach(el=>{
+    el.textContent=el.getAttribute('data-'+lang)||el.textContent;
+  });
+}
+
+// ── 今日分析 ──────────────────────────────────────────────
+function setTodayDate(){
+  document.getElementById('todayDate').textContent =
+    new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+}
+
+async function loadTodayAnalysis(){
+  try{
+    const res=await fetch('/api/daily_analysis');
+    const data=await res.json();
+    if(!data.ok) return;
+    const badge=document.getElementById('directionBadge');
+    if(data.direction==='bullish'){ badge.className='card-badge badge-long'; badge.textContent=data.direction_text||'多方偏向 BULLISH'; }
+    else if(data.direction==='bearish'){ badge.className='card-badge badge-short'; badge.textContent=data.direction_text||'空方偏向 BEARISH'; }
+    else{ badge.className='card-badge badge-watch'; badge.textContent=data.direction_text||'多空觀望 NEUTRAL'; }
+    if(data.bias_summary) document.getElementById('analysisText').textContent=data.bias_summary;
+    if(data.gold_price){
+      const p=data.gold_price;
+      document.getElementById('lvl-res').textContent=(p+35).toFixed(1);
+      document.getElementById('lvl-tp1').textContent=(p+20).toFixed(1);
+      document.getElementById('lvl-entry').textContent=p.toFixed(1);
+      document.getElementById('lvl-sl').textContent=(p-18).toFixed(1);
+      document.getElementById('lvl-sup').textContent=(p-38).toFixed(1);
+    }
+  }catch(e){ console.warn('分析載入失敗',e); }
+}
+
+// ── 市場分析文章（夥伴4） ─────────────────────────────────
+async function loadMarketArticles(){
+  try{
+    const res=await fetch('/api/articles/latest');
+    const data=await res.json();
+    if(!data.ok||!data.article){
+      document.getElementById('articleTitle').style.display='none';
+      document.getElementById('articleContent').style.display='none';
+      document.getElementById('articleNoData').style.display='flex';
+      return;
+    }
+    const a=data.article;
+    const date=new Date(a.published_at).toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+    const xs=a.xau_change_pct>=0?'▲':'▼', ds=a.dxy_change_pct>=0?'▲':'▼';
+    const xc=a.xau_change_pct>=0?'up':'down', dc=a.dxy_change_pct>=0?'down':'up';
+    document.getElementById('articleDate').textContent=date;
+    document.getElementById('articleTags').innerHTML=
+      `<span class="market-tag">XAU/USD <span class="${xc}">$${a.xau_price} ${xs}${Math.abs(a.xau_change_pct).toFixed(2)}%</span></span>`+
+      `<span class="market-tag">DXY <span class="${dc}">${a.dxy_price} ${ds}${Math.abs(a.dxy_change_pct).toFixed(3)}%</span></span>`;
+    document.getElementById('articleTitle').textContent=a.title;
+    document.getElementById('articleContent').innerHTML=a.content.replace(/\n/g,'<br>');
+    loadArticleList();
+  }catch(e){
+    document.getElementById('articleTitle').textContent='暫時無法取得分析';
+    document.getElementById('articleContent').textContent='請稍後再試。';
+  }
+}
+
+async function loadArticleList(){
+  try{
+    const res=await fetch('/api/articles?page=1&per_page=4');
+    const data=await res.json();
+    if(!data.ok||!data.articles||data.articles.length<=1) return;
+    const list=document.getElementById('articleList');
+    list.innerHTML=data.articles.slice(1,4).map(a=>{
+      const date=new Date(a.published_at).toLocaleDateString('zh-TW',{month:'short',day:'numeric'});
+      const preview=a.content.replace(/<[^>]*>/g,'').substring(0,55)+'...';
+      return `<div class="article-item"><div class="article-item-date">${date}</div><div class="article-item-title">${a.title}</div><div class="article-item-preview">${preview}</div></div>`;
+    }).join('');
+  }catch(e){}
+}
+
+// ── 策略文章（夥伴2） ─────────────────────────────────────
+const catLabels={ timezone:'🕐 時區影響', profit:'📈 停利規則', general:'📋 一般策略' };
+const catClasses={ timezone:'cat-timezone', profit:'cat-profit', general:'cat-general' };
+
+function renderStrategyCard(containerId, articles){
+  const el=document.getElementById(containerId);
+  if(!articles||articles.length===0){
+    el.innerHTML='<div class="strategy-empty">尚無文章，後台可新增</div>'; return;
+  }
+  el.innerHTML=articles.slice(0,2).map(a=>{
+    const summaryFirst=a.summary?a.summary.split('\n')[0]:'';
+    return `<div class="strategy-article" onclick="openStrategyModal(${JSON.stringify(a).replace(/"/g,'&quot;')})">
+      <div class="strategy-cat ${catClasses[a.category]||'cat-general'}">${catLabels[a.category]||a.category}</div>
+      <div class="strategy-title">${a.title}</div>
+      <div class="strategy-summary">${summaryFirst}</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadStrategyArticles(){
+  try{
+    const [tzRes, prRes] = await Promise.all([
+      fetch('/api/strategy/articles?category=timezone'),
+      fetch('/api/strategy/articles?category=profit')
+    ]);
+    const tzData=await tzRes.json();
+    const prData=await prRes.json();
+    renderStrategyCard('strategyTimezoneBody', tzData.ok?tzData.articles:[]);
+    renderStrategyCard('strategyProfitBody', prData.ok?prData.articles:[]);
+  }catch(e){ console.warn('策略文章載入失敗',e); }
+}
+
+function openStrategyModal(a){
+  const catMap={ timezone:'🕐 時區影響', profit:'📈 停利規則', general:'📋 一般策略' };
+  const catEl=document.getElementById('modalCat');
+  catEl.textContent=catMap[a.category]||a.category;
+  catEl.className=`modal-cat ${catClasses[a.category]||'cat-general'}`;
+  document.getElementById('modalTitle').textContent=a.title;
+  document.getElementById('modalSummary').innerHTML=(a.summary||'').split('\n').map(p=>`<div>• ${p}</div>`).join('');
+  document.getElementById('modalContent').textContent=a.content||'';
+  document.getElementById('strategyModal').className='modal-overlay show';
+}
+function closeModal(){ document.getElementById('strategyModal').className='modal-overlay'; }
+document.getElementById('strategyModal').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
+
+// ── 後台：夥伴4 ──────────────────────────────────────────
+async function triggerPartner4(){
+  const btn=document.getElementById('triggerP4Btn');
+  const res=document.getElementById('p4Result');
+  btn.disabled=true; btn.textContent='⏳ 生成中...';
+  res.style.display='block'; res.style.color='var(--text-dim)'; res.textContent='正在抓取市場數據並呼叫 Claude API...';
+  try{
+    const r=await fetch('/api/articles/trigger',{method:'POST',headers:{'X-Admin-Key':adminKey}});
+    const data=await r.json();
+    if(data.ok){ res.style.color='var(--green)'; res.textContent='✅ 完成：'+(data.article?.title||'已生成'); showToast('✅ 市場分析已生成！'); loadMarketArticles(); }
+    else{ res.style.color='var(--red)'; res.textContent='❌ '+data.error; showToast(data.error,true); }
+  }catch(e){ res.style.color='var(--red)'; res.textContent='❌ 網路錯誤'; }
+  finally{ btn.disabled=false; btn.textContent='✨ 立即生成市場分析'; }
+}
+
+// ── 後台：夥伴2 ──────────────────────────────────────────
+let selectedCat='timezone';
+function selectCat(cat){
+  selectedCat=cat;
+  ['timezone','profit','general'].forEach(c=>{
+    document.getElementById('cat-'+c).className='cat-option'+(c===cat?' sel':'');
+  });
+}
+
+async function triggerPartner2(){
+  const notes=document.getElementById('strategyNotes').value.trim();
+  if(!notes){ showToast('請貼上筆記內容',true); return; }
+  const btn=document.getElementById('triggerP2Btn');
+  const res=document.getElementById('p2Result');
+  btn.disabled=true; btn.textContent='⏳ AI 整理中...';
+  res.style.display='block'; res.style.color='var(--text-dim)'; res.textContent='Claude 正在整理你的筆記...';
+  try{
+    const r=await fetch('/api/strategy',{
+      method:'POST',
+      headers:{'X-Admin-Key':adminKey,'Content-Type':'application/json'},
+      body:JSON.stringify({notes, category:selectedCat})
+    });
+    const data=await r.json();
+    if(data.ok){
+      res.style.color='var(--green)';
+      res.textContent='✅ 完成：'+data.article.title;
+      showToast('✅ 策略文章已發布！');
+      document.getElementById('strategyNotes').value='';
+      loadStrategyArticles();
+    }else{ res.style.color='var(--red)'; res.textContent='❌ '+data.error; showToast(data.error,true); }
+  }catch(e){ res.style.color='var(--red)'; res.textContent='❌ 網路錯誤'; }
+  finally{ btn.disabled=false; btn.textContent='🧠 AI 整理並發布'; }
+}
+
+// ── 後台：今日分析 ────────────────────────────────────────
+let selectedDir='bullish';
+function selectDir(dir){
+  selectedDir=dir;
+  document.querySelectorAll('.dir-option').forEach(el=>el.className='dir-option');
+  if(dir==='bullish') document.getElementById('dir-long').className='dir-option sel-long';
+  else if(dir==='bearish') document.getElementById('dir-short').className='dir-option sel-short';
+  else document.getElementById('dir-watch').className='dir-option sel-watch';
+}
+async function publishAnalysis(){
+  const bias=document.getElementById('adminBias').value;
+  if(!bias){ showToast('請填入分析摘要',true); return; }
+  try{
+    const r=await fetch('/api/generate_analysis',{method:'POST',headers:{'X-Admin-Key':adminKey,'Content-Type':'application/json'},body:JSON.stringify({direction:selectedDir,bias_summary:bias})});
+    const data=await r.json();
+    if(data.ok){ showToast('✅ 今日分析已發布！'); loadTodayAnalysis(); }
+    else showToast('發布失敗：'+data.error,true);
+  }catch(e){ showToast('網路錯誤',true); }
+}
+
+// ── 申請表單 ──────────────────────────────────────────────
+async function submitApplication(){
+  const name=document.getElementById('applyName').value.trim();
+  const telegram=document.getElementById('applyTelegram').value.trim();
+  const email=document.getElementById('applyEmail').value.trim();
+  const experience=document.getElementById('applyExp').value;
+  const reason=document.getElementById('applyReason').value.trim();
+  if(!name||!telegram||!email){ showToast('請填入所有必填欄位',true); return; }
+  try{
+    const r=await fetch('/api/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,telegram,email,experience,reason})});
+    const data=await r.json();
+    if(data.ok){ document.getElementById('applyForm').style.display='none'; document.getElementById('successMsg').style.display='block'; }
+    else showToast('送出失敗：'+data.error,true);
+  }catch(e){ showToast('網路錯誤',true); }
+}
+
+// ── 申請名單 ──────────────────────────────────────────────
+async function loadApplications(){
+  try{
+    const r=await fetch('/api/applications',{headers:{'X-Admin-Key':adminKey}});
+    const data=await r.json();
+    const el=document.getElementById('applicationsList');
+    if(!data.ok||!data.data.length){ el.textContent='暫無申請'; return; }
+    el.innerHTML=data.data.map(a=>`
+      <div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="color:var(--text);font-weight:600">${a.name}</span>
+          <span style="padding:2px 8px;border-radius:4px;font-size:10px;background:${a.status==='approved'?'rgba(52,211,153,0.15)':a.status==='rejected'?'rgba(248,113,113,0.15)':'rgba(251,191,36,0.15)'};color:${a.status==='approved'?'var(--green)':a.status==='rejected'?'var(--red)':'#fbbf24'}">${a.status}</span>
+        </div>
+        <div style="color:var(--text-dim);font-size:11px;margin-bottom:6px">${a.telegram} · ${a.email}</div>
+        <div style="display:flex;gap:6px">
+          <button onclick="updateStatus(${a.id},'approved')" style="padding:3px 10px;background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.3);border-radius:4px;color:var(--green);font-size:10px;cursor:pointer">核准</button>
+          <button onclick="updateStatus(${a.id},'rejected')" style="padding:3px 10px;background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.3);border-radius:4px;color:var(--red);font-size:10px;cursor:pointer">拒絕</button>
+        </div>
+      </div>`).join('');
+  }catch(e){ document.getElementById('applicationsList').textContent='載入失敗'; }
+}
+async function updateStatus(id,status){
+  try{
+    await fetch(`/api/applications/${id}`,{method:'PATCH',headers:{'X-Admin-Key':adminKey,'Content-Type':'application/json'},body:JSON.stringify({status})});
+    showToast(status==='approved'?'✅ 已核准':'❌ 已拒絕'); loadApplications();
+  }catch(e){ showToast('操作失敗',true); }
+}
+function exportCSV(){
+  fetch('/api/applications',{headers:{'X-Admin-Key':adminKey}}).then(r=>r.json()).then(data=>{
+    if(!data.ok) return;
+    const rows=[['ID','姓名','Telegram','Email','經驗','原因','狀態','申請時間']];
+    data.data.forEach(a=>rows.push([a.id,a.name,a.telegram,a.email,a.experience,a.reason,a.status,a.created_at]));
+    const csv=rows.map(r=>r.map(v=>`"${v||''}"`).join(',')).join('\n');
+    const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='applications.csv'; a.click();
+  });
+}
+
+// ── 初始化 ────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  setTodayDate();
+  loadTodayAnalysis();
+  loadMarketArticles();
+  loadStrategyArticles();
+});
+</script>
+</body>
+</html>
