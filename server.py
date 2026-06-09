@@ -1014,6 +1014,132 @@ def analyze_image():
         headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'}
     )
 
+# ─── 新版圖表分析 + 對話 ──────────────────────────────────
+
+ANALYZE_CHART_PROMPT = """分析這張 XAU/USD 圖表，繁體中文輸出，格式如下（嚴格遵守，不加任何 markdown 符號）：
+
+【方向】
+多方偏向 BULLISH ▲
+（或：空方偏向 BEARISH ▼ 或：多空觀望 NEUTRAL ◉）
+一句口語說明
+
+【關鍵位】
+壓力：$XXXX（多個用 / 分隔）
+區間：$XXXX — $XXXX
+支撐：$XXXX（多個用 / 分隔）
+
+【破框SOP】
+等 M15 整理完成後，第一根K棒突破關鍵位，第二根回測守住，第三根確認後進場，停損放結構外。
+
+【風險提示】
+• 提示1（口語，不用術語）
+• 提示2
+• 提示3
+
+要求：極簡、口語、不用術語，讓沒有交易經驗的人也能看懂。"""
+
+
+@app.route('/api/analyze-chart', methods=['POST'])
+def analyze_chart():
+    if not ANTHROPIC_KEY:
+        return jsonify({"ok": False, "error": "Claude API 未設定"}), 500
+    data = request.json or {}
+    raw_image = data.get('image', '')
+    media_type = data.get('media_type', 'image/jpeg')
+    if not raw_image:
+        return jsonify({"ok": False, "error": "未收到圖片"}), 400
+    image_b64 = raw_image.split(',', 1)[1] if ',' in raw_image else raw_image
+
+    def generate():
+        try:
+            with get_claude().messages.stream(
+                model="claude-sonnet-4-6",
+                max_tokens=800,
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {"type": "image",
+                         "source": {"type": "base64",
+                                    "media_type": media_type,
+                                    "data": image_b64}},
+                        {"type": "text", "text": ANALYZE_CHART_PROMPT}
+                    ]
+                }]
+            ) as stream:
+                for text in stream.text_stream:
+                    yield f"data: {json.dumps({'text': text}, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)}, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'}
+    )
+
+
+@app.route('/api/chat-chart', methods=['POST'])
+def chat_chart():
+    if not ANTHROPIC_KEY:
+        return jsonify({"ok": False, "error": "Claude API 未設定"}), 500
+    data = request.json or {}
+    raw_image = data.get('image', '')
+    media_type = data.get('media_type', 'image/jpeg')
+    analysis = data.get('analysis', '')
+    history = data.get('history', [])
+    message = data.get('message', '').strip()
+    if not message:
+        return jsonify({"ok": False, "error": "未收到訊息"}), 400
+    image_b64 = raw_image.split(',', 1)[1] if ',' in raw_image else raw_image
+
+    # Image in first turn so model retains visual context throughout chat
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "image",
+                 "source": {"type": "base64",
+                            "media_type": media_type or "image/jpeg",
+                            "data": image_b64}},
+                {"type": "text", "text": "這是一張 XAU/USD 圖表。"}
+            ]
+        },
+        {
+            "role": "assistant",
+            "content": f"好的，我已經分析了這張圖表：\n\n{analysis}"
+        }
+    ]
+    for msg in history:
+        messages.append({
+            "role": msg.get("role"),
+            "content": msg.get("content", "")
+        })
+    messages.append({"role": "user", "content": message})
+
+    def generate():
+        try:
+            with get_claude().messages.stream(
+                model="claude-sonnet-4-6",
+                max_tokens=600,
+                system="你是 XAU Elite 的黃金交易分析師助手，用繁體中文回答，口語化、簡潔、重點直接講。",
+                messages=messages
+            ) as stream:
+                for text in stream.text_stream:
+                    yield f"data: {json.dumps({'text': text}, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)}, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'}
+    )
+
+
 # ─── 【素材收集】Feed API ─────────────────────────────────
 
 @app.route('/api/feed', methods=['GET'])
