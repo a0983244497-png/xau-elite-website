@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory, request, jsonify
+from flask import Flask, send_from_directory, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 import os
 import pg8000.native
@@ -946,6 +946,73 @@ def get_signal_stats():
             "win_rate":win_rate,"avg_pnl":round(avg_pnl,1) if avg_pnl else 0})
     except Exception as e:
         return jsonify({"ok":False,"error":str(e)}),500
+
+# ─── 圖表串流分析 ────────────────────────────────────────
+
+ANALYZER_PROMPT = """你是 XAU Elite 的黃金交易分析師，請分析這張 XAU/USD 圖表。
+
+用繁體中文輸出以下格式，不要 markdown 符號：
+
+【方向判斷】
+（只寫一行：多方偏向 BULLISH ▲ 或 空方偏向 BEARISH ▼ 或 多空觀望 NEUTRAL ◉）
+（第二行：一句話說明根據什麼判斷，口語化）
+
+【關鍵位一覽】
+• 上方壓力：$XXX（若有多個用 / 分隔）
+• 整理區間：$XXX — $XXX
+• 下方支撐：$XXX（若有多個用 / 分隔）
+
+【破框SOP建議】
+1. 等待 M15 整理區間明確形成
+2. 第一根K棒突破關鍵位，確認方向
+3. 第二根K棒回測守住（不跌回 / 不反彈回區間）
+4. 第三根K棒確認後進場，停損設於結構外
+
+【風險提示】
+• （2-3條口語化提示，不用術語，訪客看得懂）
+
+要求：口語化、簡潔、不用艱深術語、讓完全沒有交易經驗的人也能看懂。"""
+
+@app.route('/api/analyzer/image', methods=['POST'])
+def analyze_image():
+    if not ANTHROPIC_KEY:
+        return jsonify({"ok": False, "error": "Claude API 未設定"}), 500
+    data = request.json or {}
+    raw_image = data.get('image', '')
+    media_type = data.get('media_type', 'image/jpeg')
+    if not raw_image:
+        return jsonify({"ok": False, "error": "未收到圖片"}), 400
+    # Strip data URL prefix if present
+    image_b64 = raw_image.split(',', 1)[1] if ',' in raw_image else raw_image
+
+    def generate():
+        try:
+            with get_claude().messages.stream(
+                model="claude-sonnet-4-6",
+                max_tokens=1500,
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {"type": "image",
+                         "source": {"type": "base64",
+                                    "media_type": media_type,
+                                    "data": image_b64}},
+                        {"type": "text", "text": ANALYZER_PROMPT}
+                    ]
+                }]
+            ) as stream:
+                for text in stream.text_stream:
+                    yield f"data: {json.dumps({'text': text}, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)}, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'}
+    )
 
 # ─── 【素材收集】Feed API ─────────────────────────────────
 
