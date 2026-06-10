@@ -209,9 +209,20 @@ main { max-width: 640px; margin: 0 auto; padding: 80px 20px 60px; }
 
 @keyframes fadeup { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 
+.hamburger{display:none;background:none;border:1px solid rgba(201,168,76,0.3);border-radius:6px;color:var(--gold);font-size:20px;width:36px;height:36px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;line-height:1;padding:0;}
+.mobile-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:299;}
+.mobile-overlay.show{display:block;}
+.mobile-menu{position:fixed;top:0;right:-280px;width:260px;height:100vh;background:rgba(8,11,18,0.98);backdrop-filter:blur(20px);border-left:1px solid rgba(201,168,76,0.15);z-index:300;transition:right 0.3s ease;padding:24px 20px;display:flex;flex-direction:column;gap:4px;overflow-y:auto;}
+.mobile-menu.open{right:0;}
+.mobile-menu-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid rgba(201,168,76,0.12);}
+.mobile-menu-logo{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--gold);letter-spacing:2px;}
+.mobile-close{background:none;border:1px solid rgba(201,168,76,0.2);border-radius:6px;color:var(--muted);font-size:16px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.mobile-link{display:block;padding:12px 16px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;transition:all 0.2s;}
+.mobile-link:hover,.mobile-link.active{color:var(--gold);background:rgba(201,168,76,0.08);}
 @media (max-width: 600px) {
   nav { padding: 0 18px; gap: 16px; }
   .nav-links { display: none; }
+  .hamburger { display: flex; }
   .logo span { display: none; }
   main { padding: 76px 14px 40px; }
   .upload-area { padding: 44px 20px; }
@@ -226,14 +237,27 @@ main { max-width: 640px; margin: 0 auto; padding: 80px 20px 60px; }
 <nav>
   <a class="logo" href="/index.html">XAU ELITE <span>GOLD SIGNALS</span></a>
   <ul class="nav-links">
-    <li><a href="/index.html" class="nav-link">首頁</a></li>
-    <li><a href="/daily.html" class="nav-link">日內分析</a></li>
-    <li><a href="/analyzer.html" class="nav-link active">AI圖表</a></li>
-    <li><a href="/signals.html" class="nav-link">訊號紀錄</a></li>
-    <li><a href="/macro.html" class="nav-link">總經</a></li>
+    <li><a href="/index.html" class="nav-link" data-zh="首頁" data-en="Home">首頁</a></li>
+    <li><a href="/daily.html" class="nav-link" data-zh="日內分析" data-en="Intraday">日內分析</a></li>
+    <li><a href="/analyzer.html" class="nav-link active" data-zh="AI圖表" data-en="AI Chart">AI圖表</a></li>
+    <li><a href="/signals.html" class="nav-link" data-zh="訊號紀錄" data-en="Signals">訊號紀錄</a></li>
+    <li><a href="/macro.html" class="nav-link" data-zh="總經" data-en="Macro">總經</a></li>
   </ul>
   <a class="nav-apply-btn" href="/index.html#apply">申請加入</a>
+  <button class="hamburger" id="hamburger" onclick="toggleMobileMenu()">☰</button>
 </nav>
+<div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileMenu()"></div>
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mobile-menu-head">
+    <span class="mobile-menu-logo">XAU ELITE</span>
+    <button class="mobile-close" onclick="toggleMobileMenu()">✕</button>
+  </div>
+  <a href="/index.html" class="mobile-link" data-zh="首頁" data-en="Home">首頁</a>
+  <a href="/daily.html" class="mobile-link" data-zh="日內分析" data-en="Intraday">日內分析</a>
+  <a href="/analyzer.html" class="mobile-link active" data-zh="AI圖表" data-en="AI Chart">AI圖表</a>
+  <a href="/signals.html" class="mobile-link" data-zh="訊號紀錄" data-en="Signals">訊號紀錄</a>
+  <a href="/macro.html" class="mobile-link" data-zh="總經" data-en="Macro">總經</a>
+</div>
 
 <main>
 
@@ -316,6 +340,11 @@ main { max-width: 640px; margin: 0 auto; padding: 80px 20px 60px; }
 </main>
 
 <script>
+function toggleMobileMenu(){
+  document.getElementById('mobileMenu').classList.toggle('open');
+  document.getElementById('mobileOverlay').classList.toggle('show');
+}
+
 // ── State ────────────────────────────────────────────────
 let imgData = null;
 let imgMediaType = 'image/jpeg';

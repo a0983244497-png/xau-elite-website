@@ -1013,11 +1013,23 @@ def get_macro_data():
             pass
         news = []
         try:
-            res = requests.get(f"https://finnhub.io/api/v1/news?category=forex&token={FINNHUB_KEY}", timeout=10)
-            data = res.json()
-            news = [n for n in data if n.get('headline') and any(
-                kw in n['headline'].lower() for kw in
-                ['gold','xau','fed','dollar','inflation','rate','treasury','yield','dxy','vix','fomc'])][:12]
+            kws = ['gold','xau','fed','dollar','inflation','rate','treasury','yield','dxy','vix','fomc','gdp','cpi','ppi']
+            all_raw = []
+            for cat in ['general','forex']:
+                try:
+                    r2 = requests.get(f"https://finnhub.io/api/v1/news?category={cat}&token={FINNHUB_KEY}", timeout=10)
+                    all_raw.extend(r2.json() if isinstance(r2.json(), list) else [])
+                except:
+                    pass
+            seen_ids = set()
+            for n in all_raw:
+                if n.get('id') in seen_ids:
+                    continue
+                seen_ids.add(n.get('id'))
+                if n.get('headline') and any(kw in n['headline'].lower() for kw in kws):
+                    news.append(n)
+                    if len(news) >= 12:
+                        break
         except:
             pass
         price, change, change_pct = fetch_gold_price()
