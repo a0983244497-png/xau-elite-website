@@ -108,7 +108,21 @@ def fetch_gold_price():
     try:
         res = requests.get(f"https://finnhub.io/api/v1/quote?symbol=OANDA:XAU_USD&token={FINNHUB_KEY}", timeout=10)
         data = res.json()
-        return data.get('c', 0), data.get('d', 0), data.get('dp', 0)
+        price = data.get('c', 0)
+        change = data.get('d', 0)
+        change_pct = data.get('dp', 0)
+        if price and price > 0:
+            return price, change, change_pct
+    except:
+        pass
+    try:
+        xau = yf.Ticker("GC=F")
+        xi = xau.fast_info
+        xau_price = xi.last_price
+        xau_prev = xi.previous_close
+        xau_chg = xau_price - xau_prev
+        xau_chg_pct = (xau_chg / xau_prev) * 100
+        return round(xau_price, 2), round(xau_chg, 2), round(xau_chg_pct, 2)
     except:
         return 0, 0, 0
 

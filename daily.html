@@ -269,6 +269,35 @@ async function loadByDate(target, btn) {
   }
 }
 
+function renderKeyLevels(price) {
+  if (!price || price <= 0) return;
+  const r2 = (price * 1.012).toFixed(1);
+  const r1 = (price * 1.005).toFixed(1);
+  const s1 = (price * 0.995).toFixed(1);
+  const s2 = (price * 0.988).toFixed(1);
+  document.getElementById('levelsBody').innerHTML = `
+    <div class="zone-item"><span class="zone-tag zone-res">壓力</span><span class="zone-price">${r2}</span><span class="zone-desc">近期高點壓力區</span></div>
+    <div class="zone-item"><span class="zone-tag zone-res">壓力</span><span class="zone-price">${r1}</span><span class="zone-desc">M15 Pivot High</span></div>
+    <div class="zone-item"><span class="zone-tag zone-key">當前</span><span class="zone-price">${price.toFixed(1)}</span><span class="zone-desc">即時價格</span></div>
+    <div class="zone-item"><span class="zone-tag zone-sup">支撐</span><span class="zone-price">${s1}</span><span class="zone-desc">M15 Pivot Low</span></div>
+    <div class="zone-item"><span class="zone-tag zone-sup">支撐</span><span class="zone-price">${s2}</span><span class="zone-desc">近期低點支撐區</span></div>
+  `;
+}
+
+async function refreshLivePrice() {
+  try {
+    const res = await fetch('/api/gold_price');
+    const data = await res.json();
+    if (!data.ok || !data.price) return;
+    document.getElementById('goldPrice').textContent = data.price.toFixed(2);
+    const ch = data.change || 0;
+    const chEl = document.getElementById('goldChange');
+    chEl.textContent = `${ch >= 0 ? '+' : ''}${ch.toFixed(2)} USD`;
+    chEl.style.color = ch >= 0 ? '#34d399' : '#f87171';
+    renderKeyLevels(data.price);
+  } catch(e) {}
+}
+
 function renderAnalysis(data) {
   // 價格
   document.getElementById('goldPrice').textContent = data.gold_price ? data.gold_price.toFixed(2) : '—';
@@ -293,15 +322,9 @@ function renderAnalysis(data) {
     `<div class="bias-point"><div class="bias-icon">${i===0 ? (biasIcons[data.direction]||'🟡') : icons2[i]}</div><div class="bias-text">${p}</div></div>`
   ).join('') || '<div style="color:#6b7a99;font-size:13px;">暫無數據</div>';
 
-  // 關鍵位
+  // 關鍵位（依實際價格的百分比計算）
   const price = data.gold_price || 0;
-  document.getElementById('levelsBody').innerHTML = `
-    <div class="zone-item"><span class="zone-tag zone-res">壓力</span><span class="zone-price">${(price+35).toFixed(1)}</span><span class="zone-desc">近期高點壓力區</span></div>
-    <div class="zone-item"><span class="zone-tag zone-res">壓力</span><span class="zone-price">${(price+15).toFixed(1)}</span><span class="zone-desc">M15 Pivot High</span></div>
-    <div class="zone-item"><span class="zone-tag zone-key">當前</span><span class="zone-price">${price.toFixed(1)}</span><span class="zone-desc">收盤/即時價格</span></div>
-    <div class="zone-item"><span class="zone-tag zone-sup">支撐</span><span class="zone-price">${(price-15).toFixed(1)}</span><span class="zone-desc">M15 Pivot Low</span></div>
-    <div class="zone-item"><span class="zone-tag zone-sup">支撐</span><span class="zone-price">${(price-40).toFixed(1)}</span><span class="zone-desc">近期低點支撐區</span></div>
-  `;
+  renderKeyLevels(price);
 
   // 總經事件
   const eco = data.eco_events || [];
@@ -401,6 +424,8 @@ document.getElementById('customDate').min = threeMonthsAgo.toISOString().split('
 
 loadByDate('today', document.getElementById('btnToday'));
 loadArticles();
+refreshLivePrice();
+setInterval(refreshLivePrice, 60000);
 </script>
 </body>
 </html>
