@@ -10,7 +10,7 @@ from datetime import datetime
 
 import pg8000.native
 import yfinance as yf
-from anthropic import Anthropic
+from openai import OpenAI
 
 # ─── DB 連線 ───────────────────────────────────────────────
 
@@ -143,8 +143,8 @@ def _fetch_market_data():
 
 def _run_partner4(market_data):
     """用夥伴4 system prompt + 當日數據，生成結構化市場分析 JSON"""
-    anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not anthropic_key:
+    openai_key = os.environ.get("OPENAI_API_KEY")
+    if not openai_key:
         return None
 
     xau = market_data["xau_price"]
@@ -162,14 +162,16 @@ def _run_partner4(market_data):
 請根據以上數據生成今日黃金市場分析，輸出格式嚴格遵照系統指示的 JSON 結構。"""
 
     try:
-        client = Anthropic(api_key=anthropic_key)
-        msg = client.messages.create(
-            model="claude-sonnet-4-6",
+        client = OpenAI(api_key=openai_key)
+        resp = client.chat.completions.create(
+            model="gpt-4o",
             max_tokens=800,
-            system=PARTNER4_SYSTEM,
-            messages=[{"role": "user", "content": user_prompt}]
+            messages=[
+                {"role": "system", "content": PARTNER4_SYSTEM},
+                {"role": "user", "content": user_prompt}
+            ]
         )
-        raw = msg.content[0].text.replace("```json", "").replace("```", "").strip()
+        raw = resp.choices[0].message.content.replace("```json", "").replace("```", "").strip()
         return json.loads(raw)
     except Exception as e:
         print(f"[Orchestrator] 夥伴4文章生成失敗: {e}")
@@ -179,8 +181,8 @@ def _run_partner4(market_data):
 
 def _run_partner3(article, market_data):
     """把夥伴4的分析文章傳給夥伴3，產出3個版本的 Threads 草稿"""
-    anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not anthropic_key or not article:
+    openai_key = os.environ.get("OPENAI_API_KEY")
+    if not openai_key or not article:
         return []
 
     xau = market_data["xau_price"]
@@ -204,14 +206,16 @@ def _run_partner3(article, market_data):
 嚴格按照系統指示的 JSON 格式輸出，3個版本分別用不同貼文類型。"""
 
     try:
-        client = Anthropic(api_key=anthropic_key)
-        msg = client.messages.create(
-            model="claude-sonnet-4-6",
+        client = OpenAI(api_key=openai_key)
+        resp = client.chat.completions.create(
+            model="gpt-4o",
             max_tokens=1200,
-            system=PARTNER3_SYSTEM,
-            messages=[{"role": "user", "content": user_prompt}]
+            messages=[
+                {"role": "system", "content": PARTNER3_SYSTEM},
+                {"role": "user", "content": user_prompt}
+            ]
         )
-        raw = msg.content[0].text.replace("```json", "").replace("```", "").strip()
+        raw = resp.choices[0].message.content.replace("```json", "").replace("```", "").strip()
         result = json.loads(raw)
         return result.get("drafts", [])
     except Exception as e:
