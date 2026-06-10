@@ -667,6 +667,23 @@ def gold_price():
     price, change, change_pct = fetch_gold_price()
     return jsonify({"ok":True,"price":price,"change":change,"change_pct":change_pct})
 
+@app.route('/api/ticker', methods=['GET'])
+def get_ticker_data():
+    syms = [('XAU', 'GC=F'), ('BTC', 'BTC-USD'), ('DXY', 'DX-Y.NYB'), ('US100', '^NDX')]
+    result = {}
+    for name, sym in syms:
+        try:
+            t = yf.Ticker(sym)
+            fi = t.fast_info
+            price = fi.last_price
+            prev = fi.previous_close
+            chg = price - prev
+            chg_pct = (chg / prev) * 100
+            result[name] = {'price': round(price, 2), 'change': round(chg, 2), 'change_pct': round(chg_pct, 2)}
+        except:
+            result[name] = {'price': 0, 'change': 0, 'change_pct': 0}
+    return jsonify({'ok': True, 'data': result})
+
 # ─── 夥伴4 API ────────────────────────────────────────────
 
 @app.route('/api/articles', methods=['GET'])
