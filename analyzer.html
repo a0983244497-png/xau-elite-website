@@ -11,8 +11,8 @@
   --gold-bg: rgba(201,168,76,0.1);
   --bg: #070b14;
   --bg2: rgba(255,255,255,0.04);
-  --border: rgba(201,168,76,0.15);
-  --border2: rgba(255,255,255,0.06);
+  --border: rgba(201,168,76,0.18);
+  --border2: rgba(255,255,255,0.07);
   --text: #dde2ef;
   --muted: #5c6b8a;
   --green: #34d399;
@@ -26,10 +26,9 @@ body {
   font-family: 'Noto Sans TC', sans-serif;
   min-height: 100vh;
   font-size: 15px;
-  line-height: 1.6;
 }
 
-/* ── Nav ── */
+/* Nav */
 nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 50;
   display: flex; align-items: center; justify-content: space-between;
@@ -41,72 +40,57 @@ nav {
 .back-btn { font-size: 12px; font-family: 'IBM Plex Mono', monospace; color: var(--muted); text-decoration: none; padding: 6px 14px; border: 1px solid var(--border2); border-radius: 6px; transition: color .2s, border-color .2s; }
 .back-btn:hover { color: var(--gold); border-color: var(--border); }
 
-/* ── Layout ── */
-main {
-  max-width: 680px;
-  margin: 0 auto;
-  padding: 80px 20px 60px;
-}
+/* Layout */
+main { max-width: 640px; margin: 0 auto; padding: 80px 20px 60px; }
 
-/* ── States ── */
+/* States */
 .state { display: none; }
 .state.visible { display: block; }
 
-/* ── Upload State ── */
+/* ── Upload ── */
 .page-header { text-align: center; margin-bottom: 36px; }
 .page-header h1 { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 700; color: #eef0f8; margin-bottom: 10px; }
 .page-header p { color: var(--muted); font-size: 14px; line-height: 1.8; }
 
 .upload-area {
-  border: 2px dashed rgba(201,168,76,0.25);
-  border-radius: 18px;
-  padding: 64px 32px;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color .25s, background .25s;
-  background: var(--bg2);
+  border: 2px dashed rgba(201,168,76,0.25); border-radius: 18px;
+  padding: 64px 32px; text-align: center; cursor: pointer;
+  transition: border-color .25s, background .25s; background: var(--bg2);
 }
-.upload-area:hover, .upload-area.drag-over {
-  border-color: var(--gold);
-  background: rgba(201,168,76,0.05);
-}
-.upload-icon { font-size: 48px; margin-bottom: 18px; opacity: .8; }
+.upload-area:hover, .upload-area.drag-over { border-color: var(--gold); background: rgba(201,168,76,0.05); }
+.upload-icon { font-size: 48px; margin-bottom: 16px; opacity: .8; }
 .upload-main { font-size: 16px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
 .upload-sub { font-size: 12px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
 
-/* ── Preview State ── */
+/* ── Preview ── */
 .preview-img {
   width: 100%; border-radius: 14px; display: block;
   max-height: 340px; object-fit: contain;
   background: #000; border: 1px solid var(--border2);
 }
-.preview-actions {
-  display: flex; gap: 12px; margin-top: 14px;
-}
+.preview-actions { display: flex; gap: 10px; margin-top: 14px; }
 .btn-ghost {
   padding: 10px 20px; background: transparent; border: 1px solid var(--border2);
   border-radius: 9px; color: var(--muted); font-size: 13px; cursor: pointer;
-  font-family: 'IBM Plex Mono', monospace; transition: all .2s;
+  font-family: 'IBM Plex Mono', monospace; transition: all .2s; white-space: nowrap;
 }
 .btn-ghost:hover { border-color: var(--border); color: var(--text); }
 .btn-gold {
   flex: 1; padding: 12px 20px;
   background: linear-gradient(135deg, var(--gold), #a07830);
-  border: none; border-radius: 9px;
-  color: #07090f; font-size: 15px; font-weight: 700;
-  cursor: pointer; font-family: 'Noto Sans TC', sans-serif;
-  transition: opacity .2s; letter-spacing: .5px;
+  border: none; border-radius: 9px; color: #07090f;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  font-family: 'Noto Sans TC', sans-serif; transition: opacity .2s; letter-spacing: .5px;
 }
 .btn-gold:hover:not(:disabled) { opacity: .85; }
 .btn-gold:disabled { opacity: .45; cursor: not-allowed; background: #2a3040; color: #4a5568; }
 
-/* ── Loading State ── */
+/* ── Loading ── */
 .loading-img {
   width: 100%; border-radius: 14px; display: block;
   max-height: 200px; object-fit: contain;
   background: #000; border: 1px solid var(--border2);
-  opacity: .45; filter: grayscale(.4);
-  margin-bottom: 20px;
+  opacity: .4; filter: grayscale(.4); margin-bottom: 20px;
 }
 .steps-card {
   background: var(--bg2); border: 1px solid var(--border);
@@ -125,7 +109,6 @@ main {
 }
 .step.active { opacity: 1; transform: translateY(0); color: var(--text); }
 .step.done { opacity: 1; transform: translateY(0); color: var(--green); }
-.step.final { opacity: 1; transform: translateY(0); color: var(--gold); font-weight: 500; }
 .si { font-size: 18px; width: 26px; text-align: center; flex-shrink: 0; }
 .st { flex: 1; }
 .ss { width: 18px; text-align: center; font-size: 13px; color: var(--green); }
@@ -136,123 +119,97 @@ main {
   border-radius: 50%; animation: spin .7s linear infinite;
 }
 
-/* ── Result State ── */
+/* ── Result ── */
 .result-top {
-  display: flex; align-items: center; gap: 14px; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
 }
 .result-thumb {
-  width: 90px; height: 64px; object-fit: cover; border-radius: 8px;
-  border: 1px solid var(--border2); flex-shrink: 0;
+  width: 84px; height: 56px; object-fit: cover;
+  border-radius: 8px; border: 1px solid var(--border2); flex-shrink: 0;
 }
-.btn-sm { padding: 7px 14px; font-size: 12px; }
-.result-hint { font-size: 13px; color: var(--muted); }
+.result-meta { font-size: 12px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+.btn-sm { padding: 7px 14px; font-size: 12px; margin-left: auto; }
 
-/* Direction card */
-.dir-card {
-  border-radius: 14px; padding: 24px 24px 20px;
-  border: 1px solid transparent; margin-bottom: 14px;
-  animation: fadeup .4s ease;
+/* Result card */
+.result-card {
+  border: 1px solid var(--border2); border-radius: 14px;
+  overflow: hidden; animation: fadeup .45s ease; margin-bottom: 12px;
 }
-.dir-card.bullish { background: rgba(52,211,153,.07); border-color: rgba(52,211,153,.2); }
-.dir-card.bearish { background: rgba(248,113,113,.07); border-color: rgba(248,113,113,.2); }
-.dir-card.neutral { background: rgba(251,191,36,.07); border-color: rgba(251,191,36,.2); }
-.dir-main { font-size: 22px; font-weight: 700; font-family: 'Playfair Display', serif; margin-bottom: 8px; }
-.dir-card.bullish .dir-main { color: var(--green); }
-.dir-card.bearish .dir-main { color: var(--red); }
-.dir-card.neutral .dir-main { color: var(--yellow); }
-.dir-reason { font-size: 13px; color: var(--muted); line-height: 1.7; }
 
-/* Levels */
-.levels-row {
-  display: grid; grid-template-columns: 1fr 1fr 1fr;
-  gap: 10px; margin-bottom: 14px;
-  animation: fadeup .4s .08s both;
+/* Direction header */
+.dir-header {
+  display: flex; align-items: center; gap: 16px;
+  padding: 20px 24px; border-bottom: 1px solid var(--border2);
 }
-.level-chip {
-  background: var(--bg2); border: 1px solid var(--border2);
-  border-radius: 10px; padding: 14px 16px; text-align: center;
+.dir-header.bullish { background: rgba(52,211,153,.09); border-bottom-color: rgba(52,211,153,.15); }
+.dir-header.bearish { background: rgba(248,113,113,.09); border-bottom-color: rgba(248,113,113,.15); }
+.dir-header.neutral { background: rgba(251,191,36,.07); border-bottom-color: rgba(251,191,36,.12); }
+.dir-emoji { font-size: 26px; flex-shrink: 0; }
+.dir-label {
+  font-size: 19px; font-weight: 700;
+  font-family: 'Playfair Display', serif; line-height: 1.2;
 }
-.level-label {
-  font-size: 10px; font-weight: 600; letter-spacing: 1px;
-  text-transform: uppercase; color: var(--muted);
-  font-family: 'IBM Plex Mono', monospace; margin-bottom: 7px;
-}
-.level-val {
-  font-size: 15px; font-weight: 600;
-  font-family: 'IBM Plex Mono', monospace; color: var(--text);
-}
-.level-chip.resistance .level-val { color: var(--red); }
-.level-chip.range .level-val { color: var(--gold); font-size: 13px; }
-.level-chip.support .level-val { color: var(--green); }
+.dir-header.bullish .dir-label { color: var(--green); }
+.dir-header.bearish .dir-label { color: var(--red); }
+.dir-header.neutral .dir-label { color: var(--yellow); }
+.dir-sub { font-size: 13px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
 
-/* Info cards */
-.info-card {
-  background: var(--bg2); border: 1px solid var(--border2);
-  border-radius: 12px; padding: 20px 22px; margin-bottom: 12px;
-  animation: fadeup .4s .15s both;
+/* Levels table */
+.levels-table { border-bottom: 1px solid var(--border2); }
+.level-row {
+  display: flex; align-items: center;
+  padding: 12px 24px; border-bottom: 1px solid rgba(255,255,255,0.03);
 }
-.info-label {
-  font-size: 11px; font-weight: 600; letter-spacing: 1.2px;
-  text-transform: uppercase; color: var(--muted);
-  font-family: 'IBM Plex Mono', monospace; margin-bottom: 12px;
-}
-.info-body { font-size: 13px; color: #9ba8bf; line-height: 1.85; white-space: pre-line; }
-
-/* Chat */
-.chat-section {
-  margin-top: 28px; border-top: 1px solid var(--border2);
-  padding-top: 24px; animation: fadeup .4s .2s both;
-}
-.chat-title {
-  font-size: 13px; color: var(--muted); margin-bottom: 16px;
+.level-row:last-child { border-bottom: none; }
+.level-name {
+  width: 86px; flex-shrink: 0;
+  font-size: 12px; color: var(--muted);
   font-family: 'IBM Plex Mono', monospace;
 }
-.chat-messages { display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; }
-.bubble {
-  max-width: 86%; padding: 12px 16px;
-  border-radius: 13px; font-size: 14px; line-height: 1.75;
-}
-.bubble-user {
-  align-self: flex-end;
-  background: var(--gold-bg); border: 1px solid rgba(201,168,76,.2);
-  color: var(--text); border-radius: 13px 13px 3px 13px;
-}
-.bubble-ai {
-  align-self: flex-start;
-  background: var(--bg2); border: 1px solid var(--border2);
-  color: #9ba8bf; border-radius: 3px 13px 13px 13px;
-}
-@keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
-.cursor { display: inline-block; width: 2px; height: 14px; background: var(--gold); animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 1px; }
-.chat-input-row { display: flex; gap: 10px; }
-.chat-input {
-  flex: 1; background: var(--bg2); border: 1px solid var(--border2);
-  border-radius: 9px; padding: 11px 16px; font-size: 14px;
-  font-family: 'Noto Sans TC', sans-serif; color: var(--text); outline: none;
-  transition: border-color .2s;
-}
-.chat-input:focus { border-color: var(--border); }
-.chat-input::placeholder { color: var(--muted); }
-.chat-send {
-  padding: 11px 20px; background: var(--gold-bg); border: 1px solid var(--border);
-  border-radius: 9px; color: var(--gold); font-size: 13px; cursor: pointer;
-  font-family: 'IBM Plex Mono', monospace; white-space: nowrap; transition: all .2s;
-}
-.chat-send:hover:not(:disabled) { background: rgba(201,168,76,.18); }
-.chat-send:disabled { opacity: .4; cursor: not-allowed; }
+.level-val { font-size: 16px; font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
+.level-row.resistance .level-val { color: var(--red); }
+.level-row.tp1       .level-val { color: var(--green); }
+.level-row.entry     .level-val { color: var(--gold); }
+.level-row.sl        .level-val { color: #f87171bb; }
+.level-row.support   .level-val { color: #34d399bb; }
 
-@keyframes fadeup { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+/* SOP + Risk sections */
+.result-section { padding: 18px 24px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.result-section:last-child { border-bottom: none; }
+.section-lbl {
+  font-size: 11px; font-weight: 600; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace; margin-bottom: 10px;
+}
+.section-body { font-size: 13px; color: #9ba8bf; line-height: 1.85; white-space: pre-line; }
+
+/* No-trade warning */
+.notrade-box {
+  border: 1px solid rgba(248,113,113,.3);
+  background: rgba(248,113,113,.07);
+  border-radius: 11px; padding: 16px 20px; margin-top: 12px;
+  animation: fadeup .4s ease;
+}
+.notrade-title {
+  font-size: 12px; font-weight: 700; color: var(--red);
+  font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; margin-bottom: 8px;
+}
+.notrade-body { font-size: 13px; color: #fca5a5; line-height: 1.75; white-space: pre-line; }
+
 .disclaimer {
   text-align: center; font-size: 11px; color: var(--muted);
-  font-family: 'IBM Plex Mono', monospace; margin-top: 32px; line-height: 1.8;
+  font-family: 'IBM Plex Mono', monospace; margin-top: 28px; line-height: 1.8;
 }
+
+@keyframes fadeup { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
 @media (max-width: 600px) {
   nav { padding: 0 18px; }
   main { padding: 72px 14px 40px; }
   .upload-area { padding: 44px 20px; }
-  .levels-row { grid-template-columns: 1fr; }
-  .dir-main { font-size: 18px; }
-  .result-thumb { width: 72px; height: 52px; }
+  .dir-label { font-size: 16px; }
+  .level-val { font-size: 15px; }
+  .result-thumb { width: 68px; height: 48px; }
 }
 </style>
 </head>
@@ -265,7 +222,7 @@ main {
 
 <main>
 
-  <!-- ── STATE: Upload ── -->
+  <!-- STATE: Upload -->
   <div id="s-upload" class="state visible">
     <div class="page-header">
       <h1>AI 圖表分析</h1>
@@ -280,7 +237,7 @@ main {
     <div class="disclaimer">⚠ 本工具僅供教育用途，不構成投資建議</div>
   </div>
 
-  <!-- ── STATE: Preview ── -->
+  <!-- STATE: Preview -->
   <div id="s-preview" class="state">
     <img id="previewImg" class="preview-img" alt="">
     <div class="preview-actions">
@@ -289,7 +246,7 @@ main {
     </div>
   </div>
 
-  <!-- ── STATE: Loading ── -->
+  <!-- STATE: Loading -->
   <div id="s-loading" class="state">
     <img id="loadingImg" class="loading-img" alt="">
     <div class="steps-card">
@@ -298,50 +255,56 @@ main {
     </div>
   </div>
 
-  <!-- ── STATE: Result ── -->
+  <!-- STATE: Result -->
   <div id="s-result" class="state">
     <div class="result-top">
       <img id="resultImg" class="result-thumb" alt="">
-      <span class="result-hint">分析完成</span>
-      <button class="btn-ghost btn-sm" style="margin-left:auto" onclick="resetToUpload()">← 重新上傳</button>
+      <span class="result-meta">分析完成</span>
+      <button class="btn-ghost btn-sm" onclick="resetToUpload()">← 重新上傳</button>
     </div>
 
-    <div id="dirCard" class="dir-card neutral">
-      <div id="dirMain" class="dir-main"></div>
-      <div id="dirReason" class="dir-reason"></div>
-    </div>
+    <div class="result-card">
+      <!-- Direction -->
+      <div id="dirHeader" class="dir-header neutral">
+        <span id="dirEmoji" class="dir-emoji">◉</span>
+        <div>
+          <div id="dirLabel" class="dir-label"></div>
+          <div id="dirSub" class="dir-sub"></div>
+        </div>
+      </div>
 
-    <div id="levelsRow" class="levels-row"></div>
+      <!-- Key levels -->
+      <div id="levelsTable" class="levels-table"></div>
 
-    <div class="info-card" id="sopCard" style="display:none">
-      <div class="info-label">📋 破框 SOP</div>
-      <div id="sopText" class="info-body"></div>
-    </div>
+      <!-- SOP -->
+      <div class="result-section">
+        <div class="section-lbl">📋 破框 SOP</div>
+        <div id="sopBody" class="section-body"></div>
+      </div>
 
-    <div class="info-card" id="riskCard" style="display:none">
-      <div class="info-label">⚠️ 風險提示</div>
-      <div id="riskText" class="info-body"></div>
-    </div>
-
-    <div id="chatSection" class="chat-section">
-      <div class="chat-title">還有問題嗎？輸入繼續討論這張圖</div>
-      <div id="chatMessages" class="chat-messages"></div>
-      <div class="chat-input-row">
-        <input id="chatInput" class="chat-input" type="text" placeholder="例：這個支撐位可以進場嗎？">
-        <button class="chat-send" id="chatSendBtn" onclick="sendChat()">送出 →</button>
+      <!-- Risk -->
+      <div class="result-section">
+        <div class="section-lbl">⚠️ 風險提示</div>
+        <div id="riskBody" class="section-body"></div>
       </div>
     </div>
+
+    <!-- No-trade warning (conditional) -->
+    <div id="notradeBox" class="notrade-box" style="display:none">
+      <div class="notrade-title">🚫 不做單條件</div>
+      <div id="notradeBody" class="notrade-body"></div>
+    </div>
+
+    <div class="disclaimer">⚠ 本工具僅供教育用途，不構成投資建議</div>
   </div>
 
 </main>
 
 <script>
-// ── State ───────────────────────────────────────────────
-let imgData = null;       // compressed data URL
+// ── State ────────────────────────────────────────────────
+let imgData = null;
 let imgMediaType = 'image/jpeg';
-let analysisText = '';    // full raw text from AI
-let chatHistory = [];     // [{role, content}, ...]
-let chatBusy = false;
+let analysisText = '';
 
 function showState(id) {
   document.querySelectorAll('.state').forEach(el => el.classList.remove('visible'));
@@ -349,9 +312,8 @@ function showState(id) {
 }
 
 function resetToUpload() {
-  imgData = null; analysisText = ''; chatHistory = [];
+  imgData = null; analysisText = '';
   document.getElementById('fileInput').value = '';
-  document.getElementById('chatMessages').innerHTML = '';
   showState('s-upload');
 }
 
@@ -399,8 +361,9 @@ async function handleFile(file) {
   if (!compressed) { alert('圖片讀取失敗，請重試'); return; }
   imgData = compressed;
   document.getElementById('previewImg').src = imgData;
-  document.getElementById('analyzeBtn').disabled = false;
-  document.getElementById('analyzeBtn').textContent = '🔍 開始 AI 分析';
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = false;
+  btn.textContent = '🔍 開始 AI 分析';
   showState('s-preview');
 }
 
@@ -440,63 +403,24 @@ function runSteps() {
 function markDone(i) {
   const el = document.getElementById('step_' + i);
   if (!el) return;
-  el.classList.replace('active', 'done');
+  el.classList.remove('active'); el.classList.add('done');
   el.querySelector('.ss').textContent = '✓';
 }
 
 function tryFinish() {
   if (!_streamDone || !_minTimeDone) return;
-  // Complete remaining active steps
   for (let i = 0; i < STEP_DEFS.length; i++) markDone(i);
-  // Add success step
   const list = document.getElementById('stepsList');
   const el = document.createElement('div');
-  el.className = 'step final';
+  el.className = 'step';
+  el.style.cssText = 'opacity:0;transform:translateY(5px);color:var(--gold);font-weight:500';
   el.innerHTML = '<span class="si">✅</span><span class="st">分析完成！</span>';
-  setTimeout(() => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(5px)';
-    list.appendChild(el);
-    requestAnimationFrame(() => {
-      el.style.transition = 'opacity .4s, transform .4s';
-      el.style.opacity = '1'; el.style.transform = 'translateY(0)';
-    });
-  }, 200);
-  setTimeout(() => { renderResult(); showState('s-result'); }, 900);
-}
-
-// ── Main analysis ────────────────────────────────────────
-async function startAnalysis() {
-  if (!imgData) return;
-  const btn = document.getElementById('analyzeBtn');
-  btn.disabled = true; btn.textContent = '⏳ 分析中...';
-  analysisText = '';
-
-  document.getElementById('loadingImg').src = imgData;
-  showState('s-loading');
-  runSteps();
-
-  try {
-    const resp = await fetch('/api/analyze-chart', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: imgData, media_type: imgMediaType })
-    });
-    if (!resp.ok) {
-      const e = await resp.json().catch(() => ({}));
-      throw new Error(e.error || `HTTP ${resp.status}`);
-    }
-    await readSSE(resp, chunk => { analysisText += chunk; });
-  } catch (e) {
-    _streamDone = true; _minTimeDone = true;
-    analysisText = `【方向】\n多空觀望 NEUTRAL ◉\n無法讀取圖表，請重試\n\n【關鍵位】\n壓力：—\n區間：—\n支撐：—\n\n【破框SOP】\n❌ 分析失敗：${e.message}\n\n【風險提示】\n• 請確認圖片清晰並包含 K 線\n• 建議使用截圖工具重新截取`;
-    _streamDone = true;
-    tryFinish();
-    return;
-  }
-
-  _streamDone = true;
-  tryFinish();
+  list.appendChild(el);
+  requestAnimationFrame(() => {
+    el.style.transition = 'opacity .4s, transform .4s';
+    el.style.opacity = '1'; el.style.transform = 'translateY(0)';
+  });
+  setTimeout(() => { renderResult(); showState('s-result'); }, 800);
 }
 
 // ── SSE reader ───────────────────────────────────────────
@@ -523,143 +447,110 @@ async function readSSE(response, onChunk) {
   }
 }
 
-// ── Parse & render result ────────────────────────────────
+// ── Start analysis ───────────────────────────────────────
+async function startAnalysis() {
+  if (!imgData) return;
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true; btn.textContent = '⏳ 分析中...';
+  analysisText = '';
+
+  document.getElementById('loadingImg').src = imgData;
+  showState('s-loading');
+  runSteps();
+
+  try {
+    const resp = await fetch('/api/analyze-chart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: imgData, media_type: imgMediaType })
+    });
+    if (!resp.ok) {
+      const e = await resp.json().catch(() => ({}));
+      throw new Error(e.error || `HTTP ${resp.status}`);
+    }
+    await readSSE(resp, chunk => { analysisText += chunk; });
+  } catch (e) {
+    analysisText = [
+      '【方向】', '多空觀望 NEUTRAL ◉', '分析失敗，請重試',
+      '', '【關鍵位】', '上方大壓：—', 'TP1 目標：—', '進場觸發：—', '停損基準：—', '下方大撐：—',
+      '', '【破框SOP】', `❌ 錯誤：${e.message}`,
+      '', '【風險提示】', '• 請確認圖片清晰且包含 K 線圖', '• 建議重新截圖後再試'
+    ].join('\n');
+  }
+  _streamDone = true;
+  tryFinish();
+}
+
+// ── Parse + render ───────────────────────────────────────
 function extractSection(text, key) {
   const re = new RegExp(`【${key}[^】]*】\\s*([\\s\\S]*?)(?=【|$)`);
   const m = text.match(re);
   return m ? m[1].trim() : '';
 }
 
-function renderResult() {
-  const dir  = extractSection(analysisText, '方向');
-  const lev  = extractSection(analysisText, '關鍵位');
-  const sop  = extractSection(analysisText, '破框SOP');
-  const risk = extractSection(analysisText, '風險提示');
+function getLevel(text, label) {
+  const re = new RegExp(`${label}[：:]\\s*(.+)`);
+  const m = text.match(re);
+  return m ? m[1].trim() : '—';
+}
 
-  // Direction
+function esc(t) {
+  return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderResult() {
+  const dir     = extractSection(analysisText, '方向');
+  const lev     = extractSection(analysisText, '關鍵位');
+  const sop     = extractSection(analysisText, '破框SOP');
+  const risk    = extractSection(analysisText, '風險提示');
+  const notrade = extractSection(analysisText, '不做單');
+
+  // Direction header
   const lines = dir.split('\n').filter(l => l.trim());
   const d0 = lines[0] || '';
   const reason = lines.slice(1).join(' ').trim();
-  const card = document.getElementById('dirCard');
-  card.className = 'dir-card ' + (
-    d0.includes('BULLISH') || d0.includes('多方') ? 'bullish' :
-    d0.includes('BEARISH') || d0.includes('空方') ? 'bearish' : 'neutral'
-  );
-  document.getElementById('dirMain').textContent = d0 || '分析結果';
-  document.getElementById('dirReason').textContent = reason;
+  let type = 'neutral', emoji = '◉';
+  if (d0.includes('BULLISH') || d0.includes('多方')) { type = 'bullish'; emoji = '🔼'; }
+  else if (d0.includes('BEARISH') || d0.includes('空方')) { type = 'bearish'; emoji = '🔽'; }
 
-  // Levels
-  const pressM = lev.match(/壓力[：:]\s*(.+)/);
-  const rangeM = lev.match(/區間[：:]\s*(.+)/);
-  const suppM  = lev.match(/支撐[：:]\s*(.+)/);
-  const row = document.getElementById('levelsRow');
-  row.innerHTML = '';
-  if (pressM || rangeM || suppM) {
-    const chips = [
-      { cls: 'resistance', label: '上方壓力', val: pressM?.[1]?.trim() || '—' },
-      { cls: 'range',      label: '整理區間', val: rangeM?.[1]?.trim() || '—' },
-      { cls: 'support',    label: '下方支撐', val: suppM?.[1]?.trim() || '—' },
-    ];
-    chips.forEach(c => {
-      const el = document.createElement('div');
-      el.className = `level-chip ${c.cls}`;
-      el.innerHTML = `<div class="level-label">${c.label}</div><div class="level-val">${esc(c.val)}</div>`;
-      row.appendChild(el);
-    });
-  }
+  document.getElementById('dirHeader').className = 'dir-header ' + type;
+  document.getElementById('dirEmoji').textContent = emoji;
+  document.getElementById('dirLabel').textContent = d0;
+  document.getElementById('dirSub').textContent = reason;
 
-  // SOP
-  if (sop) {
-    document.getElementById('sopText').textContent = sop;
-    document.getElementById('sopCard').style.display = '';
-  }
+  // Key levels table
+  const LEVEL_DEFS = [
+    { cls: 'resistance', label: '上方大壓', key: '上方大壓' },
+    { cls: 'tp1',        label: 'TP1 目標', key: 'TP1 目標' },
+    { cls: 'entry',      label: '進場觸發', key: '進場觸發' },
+    { cls: 'sl',         label: '停損基準', key: '停損基準' },
+    { cls: 'support',    label: '下方大撐', key: '下方大撐' },
+  ];
+  const table = document.getElementById('levelsTable');
+  table.innerHTML = '';
+  LEVEL_DEFS.forEach(def => {
+    const val = getLevel(lev, def.key);
+    const row = document.createElement('div');
+    row.className = 'level-row ' + def.cls;
+    row.innerHTML = `<span class="level-name">${def.label}</span><span class="level-val">${esc(val)}</span>`;
+    table.appendChild(row);
+  });
 
-  // Risk
-  if (risk) {
-    document.getElementById('riskText').textContent = risk;
-    document.getElementById('riskCard').style.display = '';
+  // SOP + Risk
+  document.getElementById('sopBody').textContent  = sop  || '—';
+  document.getElementById('riskBody').textContent = risk || '—';
+
+  // No-trade warning
+  const ntBox = document.getElementById('notradeBox');
+  if (notrade && notrade.replace(/[•\s]/g, '')) {
+    document.getElementById('notradeBody').textContent = notrade;
+    ntBox.style.display = '';
+  } else {
+    ntBox.style.display = 'none';
   }
 
   // Thumbnail
   document.getElementById('resultImg').src = imgData;
-
-  // Reset chat
-  chatHistory = [];
-  document.getElementById('chatMessages').innerHTML = '';
-  document.getElementById('chatInput').value = '';
-}
-
-function esc(t) {
-  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// ── Chat ─────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('chatInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
-  });
-});
-
-async function sendChat() {
-  if (chatBusy) return;
-  const input = document.getElementById('chatInput');
-  const msg = input.value.trim();
-  if (!msg) return;
-  input.value = '';
-  chatBusy = true;
-  document.getElementById('chatSendBtn').disabled = true;
-
-  addBubble(msg, 'user');
-  chatHistory.push({ role: 'user', content: msg });
-
-  const aiBubble = addBubble('', 'ai');
-  const cursor = document.createElement('span');
-  cursor.className = 'cursor';
-  aiBubble.appendChild(cursor);
-
-  let reply = '';
-  try {
-    const resp = await fetch('/api/chat-chart', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        image: imgData,
-        media_type: imgMediaType,
-        analysis: analysisText,
-        history: chatHistory.slice(0, -1),
-        message: msg
-      })
-    });
-    if (!resp.ok) {
-      const e = await resp.json().catch(() => ({}));
-      throw new Error(e.error || `HTTP ${resp.status}`);
-    }
-    await readSSE(resp, chunk => {
-      reply += chunk;
-      cursor.remove();
-      aiBubble.textContent = reply;
-      aiBubble.appendChild(cursor);
-      aiBubble.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    });
-  } catch (e) {
-    reply = `❌ 錯誤：${e.message}`;
-    aiBubble.textContent = reply;
-  } finally {
-    cursor.remove();
-    chatHistory.push({ role: 'assistant', content: reply });
-    chatBusy = false;
-    document.getElementById('chatSendBtn').disabled = false;
-    document.getElementById('chatInput').focus();
-  }
-}
-
-function addBubble(text, role) {
-  const wrap = document.createElement('div');
-  wrap.className = `bubble bubble-${role}`;
-  wrap.textContent = text;
-  document.getElementById('chatMessages').appendChild(wrap);
-  wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  return wrap;
 }
 </script>
 </body>
