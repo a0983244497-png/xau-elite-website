@@ -1056,10 +1056,11 @@ def analyze_chart():
     image_b64 = raw_image.split(',', 1)[1] if ',' in raw_image else raw_image
 
     def generate():
+        chunks = []
         try:
             with get_claude().messages.stream(
                 model="claude-sonnet-4-6",
-                max_tokens=800,
+                max_tokens=1000,
                 messages=[{
                     "role": "user",
                     "content": [
@@ -1072,9 +1073,13 @@ def analyze_chart():
                 }]
             ) as stream:
                 for text in stream.text_stream:
+                    chunks.append(text)
                     yield f"data: {json.dumps({'text': text}, ensure_ascii=False)}\n\n"
+            full = ''.join(chunks)
+            print(f"\n=== analyze-chart 完整回應 ===\n{full}\n=== END ===\n", flush=True)
             yield "data: [DONE]\n\n"
         except Exception as e:
+            print(f"analyze-chart 錯誤: {e}", flush=True)
             yield f"data: {json.dumps({'error': str(e)}, ensure_ascii=False)}\n\n"
             yield "data: [DONE]\n\n"
 

@@ -324,7 +324,7 @@ async function compressImage(file) {
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
-      const MAX = 800;
+      const MAX = 1200;
       let w = img.width, h = img.height;
       if (w > MAX || h > MAX) {
         if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
@@ -333,7 +333,7 @@ async function compressImage(file) {
       const c = document.createElement('canvas');
       c.width = w; c.height = h;
       c.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(c.toDataURL('image/jpeg', 0.85));
+      resolve(c.toDataURL('image/jpeg', 0.92));
     };
     img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
     img.src = url;
@@ -376,10 +376,11 @@ const STEP_DEFS = [
 
 let _streamDone = false;
 let _minTimeDone = false;
+let _finished = false;
 let _stepTimers = [];
 
 function runSteps() {
-  _streamDone = false; _minTimeDone = false;
+  _streamDone = false; _minTimeDone = false; _finished = false;
   _stepTimers.forEach(clearTimeout); _stepTimers = [];
   const list = document.getElementById('stepsList');
   list.innerHTML = '';
@@ -408,7 +409,8 @@ function markDone(i) {
 }
 
 function tryFinish() {
-  if (!_streamDone || !_minTimeDone) return;
+  if (!_streamDone || !_minTimeDone || _finished) return;
+  _finished = true;
   for (let i = 0; i < STEP_DEFS.length; i++) markDone(i);
   const list = document.getElementById('stepsList');
   const el = document.createElement('div');
@@ -489,9 +491,18 @@ function extractSection(text, key) {
 }
 
 function getLevel(text, label) {
-  const re = new RegExp(`${label}[：:]\\s*(.+)`);
+  // Escape regex special chars, then allow flexible spaces between characters
+  const esc2 = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const relaxed = esc2.replace(/\s+/g, '[\\s　]*');
+  // Match label (with optional leading bullet/space) then colon then value
+  const re = new RegExp(`[•·\\s]?${relaxed}\\s*[：:﹕]\\s*([^\\n\\r]+)`, 'm');
   const m = text.match(re);
-  return m ? m[1].trim() : '—';
+  if (m) {
+    const v = m[1].trim();
+    // Reject placeholder values the model might output
+    if (v && !v.startsWith('$XX') && v !== 'XXXX' && v !== '—') return v;
+  }
+  return '—';
 }
 
 function esc(t) {
@@ -499,8 +510,10 @@ function esc(t) {
 }
 
 function renderResult() {
+  console.log('[analyzer] analysisText:', analysisText);
   const dir     = extractSection(analysisText, '方向');
   const lev     = extractSection(analysisText, '關鍵位');
+  console.log('[analyzer] 【關鍵位】 section:', lev);
   const sop     = extractSection(analysisText, '破框SOP');
   const risk    = extractSection(analysisText, '風險提示');
   const notrade = extractSection(analysisText, '不做單');
