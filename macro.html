@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XAU Elite | 總經分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#c9a84c;--gold-light:#e8c97a;--gold-dim:rgba(201,168,76,0.15);
+  --bg:#080b12;--bg2:#0d1220;--bg3:#111827;
+  --border:rgba(201,168,76,0.2);--text:#e8eaf0;--text-dim:#6b7a99;
+  --green:#34d399;--red:#f87171;--blue:#60a5fa;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% 20%,rgba(201,168,76,0.04) 0%,transparent 60%);pointer-events:none;z-index:0;}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(8,11,18,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 40px;height:64px;display:flex;align-items:center;gap:24px;}
+.nav-logo{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--gold);letter-spacing:2px;text-decoration:none;white-space:nowrap;flex-shrink:0;}
+.nav-logo span{color:var(--text-dim);font-weight:400;font-size:12px;margin-left:8px;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;}
+.nav-links{display:flex;align-items:center;gap:2px;flex:1;}
+.nav-link{padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;color:var(--text-dim);text-decoration:none;transition:all 0.2s;white-space:nowrap;}
+.nav-link:hover,.nav-link.active{color:var(--gold);background:var(--gold-dim);}
+.nav-apply{padding:7px 18px;background:var(--gold-dim);border:1px solid var(--border);border-radius:8px;color:var(--gold);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap;margin-left:auto;flex-shrink:0;}
+.nav-apply:hover{background:rgba(201,168,76,0.28);}
+
+/* ── PAGE ── */
+.page{padding:96px 40px 60px;max-width:1240px;margin:0 auto;position:relative;z-index:1;}
+.page-head{margin-bottom:28px;}
+.page-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:#f0f4ff;margin-bottom:6px;}
+.page-sub{font-size:13px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;}
+
+/* ── FED BANNER ── */
+.fed-banner{border-radius:16px;padding:20px 28px;margin-bottom:28px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+.fed-banner.hold{background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.3);}
+.fed-banner.hike{background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.3);}
+.fed-banner.cut{background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.3);}
+.fed-icon{font-size:36px;flex-shrink:0;}
+.fed-info{flex:1;}
+.fed-label{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;}
+.fed-status{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;}
+.fed-status.hold{color:#fbbf24;}
+.fed-status.hike{color:var(--red);}
+.fed-status.cut{color:var(--green);}
+.fed-desc{font-size:13px;color:#b0b8cc;margin-top:4px;line-height:1.6;}
+.fed-rate{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+.fed-rate-val{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:600;color:var(--gold);}
+.fed-rate-lbl{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-dim);}
+
+/* ── MARKET STATS ── */
+.mkt-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;}
+.mkt-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px 20px;}
+.mkt-card-label{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+.mkt-card-val{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:600;color:var(--gold);margin-bottom:4px;}
+.mkt-card-chg{font-family:'IBM Plex Mono',monospace;font-size:12px;}
+.mkt-card-chg.up{color:var(--green);}
+.mkt-card-chg.down{color:var(--red);}
+.mkt-card-note{font-size:11px;color:var(--text-dim);margin-top:2px;}
+
+/* ── MAIN GRID ── */
+.main-grid{display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start;}
+
+/* ── WIDGETS COL ── */
+.widgets-col{display:flex;flex-direction:column;gap:16px;}
+.widget-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+.widget-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.widget-title{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;}
+.widget-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 8px;border-radius:4px;background:var(--bg3);color:var(--text-dim);border:1px solid rgba(255,255,255,0.06);}
+.tv-container{height:220px;}
+
+/* ── RIGHT COL ── */
+.right-col{display:flex;flex-direction:column;gap:16px;}
+.info-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+.info-head{padding:14px 20px;border-bottom:1px solid var(--border);}
+.info-title{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;}
+.info-body{padding:8px 20px 12px;}
+
+/* ── ECO EVENTS ── */
+.eco-list{display:flex;flex-direction:column;}
+.eco-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.eco-row:last-child{border-bottom:none;}
+.eco-date{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-dim);min-width:52px;padding-top:2px;flex-shrink:0;}
+.eco-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.eco-dot.high{background:var(--red);box-shadow:0 0 5px rgba(248,113,113,0.5);}
+.eco-dot.medium{background:#fbbf24;}
+.eco-dot.low{background:var(--text-dim);}
+.eco-name{font-size:12px;color:var(--text);line-height:1.4;}
+.eco-vals{font-size:10px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;margin-top:2px;}
+.eco-empty{font-size:12px;color:var(--text-dim);text-align:center;padding:16px 0;font-family:'IBM Plex Mono',monospace;}
+
+/* Impact legend */
+.impact-legend{display:flex;align-items:center;gap:12px;padding:0 0 10px;flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-dim);}
+.legend-dot{width:6px;height:6px;border-radius:50%;}
+
+/* ── NEWS ── */
+.news-list{display:flex;flex-direction:column;}
+.news-row{padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;}
+.news-row:last-child{border-bottom:none;}
+.news-row:hover .news-headline{color:var(--gold);}
+.news-meta{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;}
+.news-time{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-dim);}
+.news-src{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-dim);}
+.news-headline{font-size:13px;color:var(--text);line-height:1.4;transition:color 0.2s;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+/* ── RWD ── */
+@media(max-width:960px){
+  nav{padding:0 20px;gap:16px;}
+  .nav-links{display:none;}
+  .page{padding:88px 20px 40px;}
+  .mkt-stats{grid-template-columns:repeat(3,1fr);}
+  .main-grid{grid-template-columns:1fr;}
+}
+@media(max-width:600px){
+  .nav-logo span{display:none;}
+  .mkt-stats{grid-template-columns:1fr 1fr;}
+  .fed-banner{padding:16px 20px;}
+  .fed-rate{display:none;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/index.html" class="nav-logo">XAU ELITE <span>GOLD SIGNALS</span></a>
+  <ul class="nav-links" style="list-style:none;">
+    <li><a href="/index.html" class="nav-link">首頁</a></li>
+    <li><a href="/daily.html" class="nav-link">日內分析</a></li>
+    <li><a href="/analyzer.html" class="nav-link">AI圖表</a></li>
+    <li><a href="/signals.html" class="nav-link">訊號紀錄</a></li>
+    <li><a href="/macro.html" class="nav-link active">總經</a></li>
+  </ul>
+  <a href="/index.html#apply" class="nav-apply">申請加入</a>
+</nav>
+
+<div class="page">
+
+  <div class="page-head">
+    <div class="page-title">總經分析</div>
+    <div class="page-sub">FED 政策 · 美債殖利率 · 恐慌指數 · 美元指數 · 經濟日曆</div>
+  </div>
+
+  <!-- Fed policy banner -->
+  <div class="fed-banner hold" id="fedBanner">
+    <div class="fed-icon">🏛️</div>
+    <div class="fed-info">
+      <div class="fed-label">Fed 政策狀態</div>
+      <div class="fed-status hold" id="fedStatus">暫停升降息 · HOLD</div>
+      <div class="fed-desc" id="fedDesc">聯準會維持利率不變，持續觀察通膨走勢與就業數據，下次 FOMC 會議前市場以橫盤震盪為主。</div>
+    </div>
+    <div class="fed-rate">
+      <div class="fed-rate-val" id="fedRate">5.25-5.50%</div>
+      <div class="fed-rate-lbl">目標利率區間</div>
+    </div>
+  </div>
+
+  <!-- Market stats row -->
+  <div class="mkt-stats">
+    <div class="mkt-card">
+      <div class="mkt-card-label">XAU/USD</div>
+      <div class="mkt-card-val" id="mkXauPrice">—</div>
+      <div class="mkt-card-chg" id="mkXauChg">—</div>
+      <div class="mkt-card-note">黃金現貨</div>
+    </div>
+    <div class="mkt-card">
+      <div class="mkt-card-label">美元指數 DXY</div>
+      <div class="mkt-card-val" id="mkDxyPrice">—</div>
+      <div class="mkt-card-chg" id="mkDxyChg">—</div>
+      <div class="mkt-card-note">美元與黃金反向</div>
+    </div>
+    <div class="mkt-card">
+      <div class="mkt-card-label">今日高影響事件</div>
+      <div class="mkt-card-val" id="mkHighImpact" style="font-size:32px;">—</div>
+      <div class="mkt-card-chg" style="color:var(--text-dim);">本週</div>
+      <div class="mkt-card-note">高衝擊美元數據</div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+
+    <!-- LEFT: TradingView widgets -->
+    <div class="widgets-col">
+
+      <!-- DXY -->
+      <div class="widget-card">
+        <div class="widget-head">
+          <span class="widget-title">美元指數 DXY</span>
+          <span class="widget-tag">TVC:DXY · 日線</span>
+        </div>
+        <div class="tv-container">
+          <div class="tradingview-widget-container" style="height:100%;width:100%">
+            <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+            {"autosize":true,"symbol":"TVC:DXY","interval":"D","timezone":"Asia/Taipei","theme":"dark","style":"1","locale":"zh_TW","enable_publishing":false,"hide_top_toolbar":false,"hide_legend":true,"save_image":false,"hide_volume":true}
+            </script>
+          </div>
+        </div>
+      </div>
+
+      <!-- US10Y Treasury -->
+      <div class="widget-card">
+        <div class="widget-head">
+          <span class="widget-title">美債10年期殖利率</span>
+          <span class="widget-tag">TVC:US10Y · 日線</span>
+        </div>
+        <div class="tv-container">
+          <div class="tradingview-widget-container" style="height:100%;width:100%">
+            <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+            {"autosize":true,"symbol":"TVC:US10Y","interval":"D","timezone":"Asia/Taipei","theme":"dark","style":"1","locale":"zh_TW","enable_publishing":false,"hide_top_toolbar":false,"hide_legend":true,"save_image":false,"hide_volume":true}
+            </script>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIX -->
+      <div class="widget-card">
+        <div class="widget-head">
+          <span class="widget-title">恐慌指數 VIX</span>
+          <span class="widget-tag">TVC:VIX · 日線</span>
+        </div>
+        <div class="tv-container">
+          <div class="tradingview-widget-container" style="height:100%;width:100%">
+            <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+            {"autosize":true,"symbol":"TVC:VIX","interval":"D","timezone":"Asia/Taipei","theme":"dark","style":"1","locale":"zh_TW","enable_publishing":false,"hide_top_toolbar":false,"hide_legend":true,"save_image":false,"hide_volume":true}
+            </script>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /widgets-col -->
+
+    <!-- RIGHT: Eco events + news -->
+    <div class="right-col">
+
+      <!-- Eco calendar -->
+      <div class="info-card">
+        <div class="info-head">
+          <div class="info-title">本週經濟日曆（美元）</div>
+        </div>
+        <div class="info-body">
+          <div class="impact-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>高衝擊</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div>中衝擊</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--text-dim)"></div>低衝擊</div>
+          </div>
+          <div class="eco-list" id="ecoList">
+            <div class="eco-empty">載入中...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- News -->
+      <div class="info-card">
+        <div class="info-head">
+          <div class="info-title">市場重點新聞</div>
+        </div>
+        <div class="info-body">
+          <div class="news-list" id="newsList">
+            <div class="eco-empty">載入中...</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /right-col -->
+  </div><!-- /main-grid -->
+</div><!-- /page -->
+
+<script>
+async function loadMacroData(){
+  try{
+    const res = await fetch('/api/macro');
+    const data = await res.json();
+    if(!data.ok) return;
+
+    // Market stats
+    if(data.gold_price){
+      document.getElementById('mkXauPrice').textContent = data.gold_price.toFixed(2);
+      const chg = data.gold_change_pct||0;
+      const el = document.getElementById('mkXauChg');
+      el.textContent = (chg>=0?'+':'')+chg.toFixed(2)+'%';
+      el.className = 'mkt-card-chg '+(chg>=0?'up':'down');
+    }
+    if(data.dxy_price){
+      document.getElementById('mkDxyPrice').textContent = data.dxy_price.toFixed(2);
+      const chg = data.dxy_change_pct||0;
+      const el = document.getElementById('mkDxyChg');
+      el.textContent = (chg>=0?'+':'')+chg.toFixed(3)+'%';
+      el.className = 'mkt-card-chg '+(chg>=0?'up':'down');
+    }
+
+    // High impact event count
+    const eco = data.eco_events||[];
+    const highCount = eco.filter(e=>e.impact==='high').length;
+    document.getElementById('mkHighImpact').textContent = highCount;
+
+    // Eco events
+    const ecoEl = document.getElementById('ecoList');
+    if(!eco.length){
+      ecoEl.innerHTML = '<div class="eco-empty">本週無重大美元經濟數據</div>';
+    } else {
+      ecoEl.innerHTML = eco.map(e => {
+        const imp = e.impact==='high'?'high':e.impact==='medium'?'medium':'low';
+        // Try to show date + time
+        const dateStr = e.date||'';
+        const timeStr = (e.time||'').substring(0,5);
+        const display = dateStr ? dateStr.slice(5)+(timeStr?' '+timeStr:'') : (timeStr||'—');
+        return `<div class="eco-row">
+          <span class="eco-date">${display}</span>
+          <div class="eco-dot ${imp}"></div>
+          <div>
+            <div class="eco-name">${e.event||'—'}</div>
+            <div class="eco-vals">預：${e.estimate||'—'} 前：${e.prev||'—'} 實：${e.actual||'—'}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // News
+    const news = data.news_items||[];
+    const newsEl = document.getElementById('newsList');
+    if(!news.length){
+      newsEl.innerHTML = '<div class="eco-empty">暫無相關新聞</div>';
+    } else {
+      newsEl.innerHTML = news.map(n => {
+        const t = n.datetime ? new Date(n.datetime*1000).toLocaleString('zh-TW',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+        return `<div class="news-row" onclick="window.open('${n.url||'#'}','_blank')">
+          <div class="news-meta">
+            <span class="news-time">${t}</span>
+            <span class="news-src">${n.source||'—'}</span>
+          </div>
+          <div class="news-headline">${n.headline||''}</div>
+        </div>`;
+      }).join('');
+    }
+  }catch(e){ console.warn('macro load failed', e); }
+}
+
+loadMacroData();
+</script>
+</body>
+</html>

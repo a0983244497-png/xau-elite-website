@@ -933,11 +933,17 @@ def update_application(app_id):
 
 @app.route('/api/signals', methods=['GET'])
 def get_signals():
-    limit = request.args.get('limit', 20, type=int)
+    limit = request.args.get('limit', 100, type=int)
+    month = request.args.get('month', '')
     try:
         conn = get_db()
-        rows = conn.run("""SELECT id,date,direction,entry_price,result,pnl_points,note,created_at
-            FROM signals ORDER BY date DESC, created_at DESC LIMIT :limit""", limit=limit)
+        if month:
+            rows = conn.run("""SELECT id,date,direction,entry_price,result,pnl_points,note,created_at
+                FROM signals WHERE TO_CHAR(date,'YYYY-MM')=:month
+                ORDER BY date DESC, created_at DESC LIMIT :limit""", month=month, limit=limit)
+        else:
+            rows = conn.run("""SELECT id,date,direction,entry_price,result,pnl_points,note,created_at
+                FROM signals ORDER BY date DESC, created_at DESC LIMIT :limit""", limit=limit)
         cols = ['id','date','direction','entry_price','result','pnl_points','note','created_at']
         sigs = [dict(zip(cols,r)) for r in rows]
         for s in sigs:
@@ -972,14 +978,53 @@ def add_signal():
 
 @app.route('/api/signals/stats', methods=['GET'])
 def get_signal_stats():
+    month = request.args.get('month', '')
     try:
         conn = get_db()
-        rows = conn.run("SELECT COUNT(*),SUM(CASE WHEN result='win' THEN 1 ELSE 0 END),AVG(pnl_points) FROM signals")
+        if month:
+            rows = conn.run("""SELECT COUNT(*),SUM(CASE WHEN result='win' THEN 1 ELSE 0 END),AVG(pnl_points)
+                FROM signals WHERE TO_CHAR(date,'YYYY-MM')=:month""", month=month)
+        else:
+            rows = conn.run("SELECT COUNT(*),SUM(CASE WHEN result='win' THEN 1 ELSE 0 END),AVG(pnl_points) FROM signals")
         total, wins, avg_pnl = rows[0]
         total = total or 0; wins = wins or 0
         win_rate = round((wins/total)*100, 1) if total > 0 else 0
+        streak_rows = conn.run("SELECT result FROM signals ORDER BY date DESC, created_at DESC LIMIT 50")
+        streak = 0
+        for r in streak_rows:
+            if r[0] == 'win': streak += 1
+            else: break
         return jsonify({"ok":True,"total":total,"wins":wins,"losses":total-wins,
-            "win_rate":win_rate,"avg_pnl":round(avg_pnl,1) if avg_pnl else 0})
+            "win_rate":win_rate,"avg_pnl":round(avg_pnl,1) if avg_pnl else 0,"streak":streak})
+    except Exception as e:
+        return jsonify({"ok":False,"error":str(e)}),500
+
+@app.route('/api/macro', methods=['GET'])
+def get_macro_data():
+    try:
+        from_date = datetime.utcnow().strftime('%Y-%m-%d')
+        to_date = (datetime.utcnow() + timedelta(days=7)).strftime('%Y-%m-%d')
+        eco_events = []
+        try:
+            res = requests.get(f"https://finnhub.io/api/v1/calendar/economic?from={from_date}&to={to_date}&token={FINNHUB_KEY}", timeout=10)
+            data = res.json()
+            eco_events = [e for e in (data.get('economicCalendar') or []) if e.get('country') in ['US','USD']][:20]
+        except:
+            pass
+        news = []
+        try:
+            res = requests.get(f"https://finnhub.io/api/v1/news?category=forex&token={FINNHUB_KEY}", timeout=10)
+            data = res.json()
+            news = [n for n in data if n.get('headline') and any(
+                kw in n['headline'].lower() for kw in
+                ['gold','xau','fed','dollar','inflation','rate','treasury','yield','dxy','vix','fomc'])][:12]
+        except:
+            pass
+        price, change, change_pct = fetch_gold_price()
+        mkt = fetch_market_data_yfinance()
+        return jsonify({"ok":True,"eco_events":eco_events,"news_items":news,
+            "gold_price":price,"gold_change_pct":change_pct,
+            "dxy_price":mkt.get('dxy_price',0),"dxy_change_pct":mkt.get('dxy_change_pct',0)})
     except Exception as e:
         return jsonify({"ok":False,"error":str(e)}),500
 

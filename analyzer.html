@@ -31,13 +31,19 @@ body {
 /* Nav */
 nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 50;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 32px; height: 60px;
+  display: flex; align-items: center; gap: 24px;
+  padding: 0 32px; height: 64px;
   background: rgba(7,11,20,0.92); backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
 }
-.logo { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; color: var(--gold); text-decoration: none; letter-spacing: 2px; }
-.back-btn { font-size: 12px; font-family: 'IBM Plex Mono', monospace; color: var(--muted); text-decoration: none; padding: 6px 14px; border: 1px solid var(--border2); border-radius: 6px; transition: color .2s, border-color .2s; }
+.logo { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 700; color: var(--gold); text-decoration: none; letter-spacing: 2px; white-space: nowrap; flex-shrink: 0; }
+.logo span { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 8px; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; }
+.nav-links { display: flex; align-items: center; gap: 2px; flex: 1; list-style: none; }
+.nav-link { padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--muted); text-decoration: none; transition: all 0.2s; white-space: nowrap; }
+.nav-link:hover, .nav-link.active { color: var(--gold); background: rgba(201,168,76,0.12); }
+.nav-apply-btn { padding: 7px 18px; background: rgba(201,168,76,0.15); border: 1px solid var(--border); border-radius: 8px; color: var(--gold); font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; margin-left: auto; flex-shrink: 0; }
+.nav-apply-btn:hover { background: rgba(201,168,76,0.28); }
+.back-btn { font-size: 12px; font-family: 'IBM Plex Mono', monospace; color: var(--muted); text-decoration: none; padding: 6px 14px; border: 1px solid var(--border2); border-radius: 6px; transition: color .2s, border-color .2s; display: none; }
 .back-btn:hover { color: var(--gold); border-color: var(--border); }
 
 /* Layout */
@@ -204,8 +210,10 @@ main { max-width: 640px; margin: 0 auto; padding: 80px 20px 60px; }
 @keyframes fadeup { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 
 @media (max-width: 600px) {
-  nav { padding: 0 18px; }
-  main { padding: 72px 14px 40px; }
+  nav { padding: 0 18px; gap: 16px; }
+  .nav-links { display: none; }
+  .logo span { display: none; }
+  main { padding: 76px 14px 40px; }
   .upload-area { padding: 44px 20px; }
   .dir-label { font-size: 16px; }
   .level-val { font-size: 15px; }
@@ -216,8 +224,15 @@ main { max-width: 640px; margin: 0 auto; padding: 80px 20px 60px; }
 <body>
 
 <nav>
-  <a class="logo" href="/">XAU ELITE</a>
-  <a class="back-btn" href="/">← 返回首頁</a>
+  <a class="logo" href="/index.html">XAU ELITE <span>GOLD SIGNALS</span></a>
+  <ul class="nav-links">
+    <li><a href="/index.html" class="nav-link">首頁</a></li>
+    <li><a href="/daily.html" class="nav-link">日內分析</a></li>
+    <li><a href="/analyzer.html" class="nav-link active">AI圖表</a></li>
+    <li><a href="/signals.html" class="nav-link">訊號紀錄</a></li>
+    <li><a href="/macro.html" class="nav-link">總經</a></li>
+  </ul>
+  <a class="nav-apply-btn" href="/index.html#apply">申請加入</a>
 </nav>
 
 <main>
