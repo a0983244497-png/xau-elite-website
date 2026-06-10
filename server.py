@@ -10,6 +10,7 @@ import threading
 import time
 import yfinance as yf
 from anthropic import Anthropic
+from openai import OpenAI
 
 app = Flask(__name__)
 CORS(app)
@@ -17,6 +18,7 @@ CORS(app)
 DATABASE_URL = os.environ.get("DATABASE_URL")
 ADMIN_KEY = os.environ.get("ADMIN_KEY", "xauelite2024")
 ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY")
+OPENAI_KEY = os.environ.get("OPENAI_KEY")
 FINNHUB_KEY = os.environ.get("FINNHUB_KEY")
 
 # ─── 資料庫 ──────────────────────────────────────────────
@@ -151,6 +153,9 @@ def fetch_gold_news():
 
 def get_claude():
     return Anthropic(api_key=ANTHROPIC_KEY)
+
+def get_openai():
+    return OpenAI(api_key=OPENAI_KEY)
 
 def generate_analysis_with_claude(price, change, change_pct, eco_events, news):
     if not ANTHROPIC_KEY:
@@ -1046,33 +1051,34 @@ TP1 目標：$XXXX
 
 @app.route('/api/analyze-chart', methods=['POST'])
 def analyze_chart():
-    if not ANTHROPIC_KEY:
-        return jsonify({"ok": False, "error": "Claude API 未設定"}), 500
+    if not OPENAI_KEY:
+        return jsonify({"ok": False, "error": "OpenAI API 未設定"}), 500
     data = request.json or {}
     raw_image = data.get('image', '')
     media_type = data.get('media_type', 'image/jpeg')
     if not raw_image:
         return jsonify({"ok": False, "error": "未收到圖片"}), 400
-    image_b64 = raw_image.split(',', 1)[1] if ',' in raw_image else raw_image
+    # Keep full data URL for OpenAI (it accepts data:image/...;base64,... format)
+    image_url = raw_image if raw_image.startswith('data:') else f"data:{media_type};base64,{raw_image}"
 
     def generate():
         chunks = []
         try:
-            with get_claude().messages.stream(
-                model="claude-sonnet-4-6",
+            stream = get_openai().chat.completions.create(
+                model="gpt-4o",
                 max_tokens=1000,
+                stream=True,
                 messages=[{
                     "role": "user",
                     "content": [
-                        {"type": "image",
-                         "source": {"type": "base64",
-                                    "media_type": media_type,
-                                    "data": image_b64}},
+                        {"type": "image_url", "image_url": {"url": image_url}},
                         {"type": "text", "text": ANALYZE_CHART_PROMPT}
                     ]
                 }]
-            ) as stream:
-                for text in stream.text_stream:
+            )
+            for chunk in stream:
+                text = chunk.choices[0].delta.content or ''
+                if text:
                     chunks.append(text)
                     yield f"data: {json.dumps({'text': text}, ensure_ascii=False)}\n\n"
             full = ''.join(chunks)
