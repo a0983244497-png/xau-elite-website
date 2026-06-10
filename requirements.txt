@@ -7,3 +7,4 @@ openai
 yfinance
 python-dotenv
 gunicorn
+APScheduler

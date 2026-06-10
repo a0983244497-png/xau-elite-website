@@ -1,0 +1,290 @@
+"""
+Orchestrator — 每日自動化市場分析流水線
+流程：抓取市場數據 → 夥伴4（市場分析文章）→ 夥伴3（Threads 草稿）→ 存入 PostgreSQL
+排程：台灣時間 08:00（UTC 00:00），透過 APScheduler 執行
+"""
+import os
+import json
+import urllib.parse
+from datetime import datetime
+
+import pg8000.native
+import yfinance as yf
+from anthropic import Anthropic
+
+# ─── DB 連線 ───────────────────────────────────────────────
+
+def _get_db():
+    url = urllib.parse.urlparse(os.environ.get("DATABASE_URL"))
+    return pg8000.native.Connection(
+        user=url.username, password=url.password,
+        host=url.hostname, port=url.port or 5432,
+        database=url.path[1:]
+    )
+
+# ─── 建表（初始化時呼叫） ─────────────────────────────────
+
+def init_orchestrator_tables():
+    """建立 Orchestrator 專用的兩張表，如果已存在則跳過"""
+    conn = _get_db()
+    # 夥伴4 產出：結構化市場分析文章（每日一篇）
+    conn.run("""CREATE TABLE IF NOT EXISTS orchestrator_articles (
+        id SERIAL PRIMARY KEY,
+        date DATE NOT NULL,
+        title VARCHAR(200),
+        market_status TEXT,
+        key_levels TEXT,
+        gino_strategy TEXT,
+        weekly_notes TEXT,
+        full_content TEXT,
+        xau_price FLOAT,
+        dxy_price FLOAT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )""")
+    # 夥伴3 產出：Threads 貼文草稿（每日3個版本）
+    conn.run("""CREATE TABLE IF NOT EXISTS social_drafts (
+        id SERIAL PRIMARY KEY,
+        date DATE NOT NULL,
+        version INTEGER NOT NULL,
+        platform VARCHAR(50) DEFAULT 'threads',
+        style VARCHAR(100),
+        content TEXT NOT NULL,
+        is_published BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )""")
+    print("Orchestrator 資料表初始化完成")
+
+# ─── 夥伴4 系統提示詞 ─────────────────────────────────────
+
+PARTNER4_SYSTEM = """你是「金融內容整合編輯」，擁有10年以上財經媒體、金融研究與內容行銷工作經驗。你的專長是將複雜的市場數據轉化成清晰、易懂且具有實用價值的金融內容。
+
+你的任務是每天根據最新市場數據，生成一篇精簡、專業但易讀的黃金市場分析文章，供外匯講師 Gino 使用。
+
+【輸出格式】只回傳純 JSON，不要任何 markdown 符號或說明文字：
+{
+  "title": "標題（15字以內，吸引人）",
+  "market_status": "今日行情摘要（50字以內）",
+  "key_levels": "關鍵價位，格式：支撐 XXXX / 壓力 XXXX（可多個，用 / 分隔）",
+  "gino_strategy": "Gino操盤方向與策略（80字以內，口語化，像老師在跟學員說話）",
+  "weekly_notes": "本週重要觀察事項（50字以內）",
+  "full_content": "完整文章（250字以內，繁體中文）"
+}
+
+風格要求：
+- 專業但口語化，像 Gino 老師在跟學員講話
+- 不用艱深術語，讓有基礎的投資人都能理解
+- 數字直接標出（不用「約」「左右」等模糊詞）
+- 以教育分享為主，不構成投資建議"""
+
+# ─── 夥伴3 系統提示詞 ─────────────────────────────────────
+
+PARTNER3_SYSTEM = """你是「社群內容創作夥伴」，擁有10年以上社群行銷、品牌內容與數位媒體工作經驗，熟悉台灣 Instagram、Threads 平台生態。
+
+你服務的品牌：外匯講師 Gino（朱祐陞）
+Threads 帳號：yusheng.zhu.14
+每週二四晚上 21:00 群內直播，目標受眾：台灣外匯／黃金交易投資人
+
+【Gino 貼文風格（嚴格模仿）】
+- 像朋友聊天，不像老師上課，口語直接不說教
+- 短句為主，一句一行，閱讀節奏快
+- 重要數字直接標出，例如：4337、4366、99.5
+- 稱呼讀者：「各位」「脆友們」「兄弟姊妹們」
+- 結尾用問句邀請互動
+- emoji 自然帶入不過度，常用：🤣😎👍😅🙃
+- 偶爾幽默自嘲，帶生活感和真實感
+- 招牌開頭：「溫馨提醒：」用於市場提示類貼文
+
+【貼文類型】
+1. 溫馨提醒型：開頭「溫馨提醒：」+ 關鍵價位 + 觀察方向 + 互動
+2. 市場回顧型：行情感受 → 預判 → 實際發生 → 結果 → 恭喜鼓勵
+3. 個人觀點型：直接說判斷 → 關鍵位觀察 → 問讀者打算怎麼做
+
+【產出規則】
+- Threads 脆貼文：50～150 字
+- 每次輸出 3 個不同角度版本
+- 語氣口語親切，不用艱深術語，不保證獲利
+- 以教育分享為主，不構成投資建議
+
+【輸出格式】只回傳純 JSON，不要任何 markdown 符號或說明文字：
+{
+  "drafts": [
+    {"version": 1, "style": "溫馨提醒型", "content": "..."},
+    {"version": 2, "style": "市場回顧型", "content": "..."},
+    {"version": 3, "style": "個人觀點型", "content": "..."}
+  ]
+}"""
+
+# ─── 市場數據抓取 ─────────────────────────────────────────
+
+def _fetch_market_data():
+    """用 yfinance 抓取 XAU/USD 與 DXY 當前數據"""
+    try:
+        xau = yf.Ticker("GC=F")
+        xi = xau.fast_info
+        xau_price = round(xi.last_price, 2)
+        xau_chg_pct = round(((xi.last_price - xi.previous_close) / xi.previous_close) * 100, 2)
+
+        dxy = yf.Ticker("DX-Y.NYB")
+        di = dxy.fast_info
+        dxy_price = round(di.last_price, 3)
+        dxy_chg_pct = round(((di.last_price - di.previous_close) / di.previous_close) * 100, 3)
+
+        return {
+            "xau_price": xau_price,
+            "xau_change_pct": xau_chg_pct,
+            "dxy_price": dxy_price,
+            "dxy_change_pct": dxy_chg_pct,
+        }
+    except Exception as e:
+        print(f"[Orchestrator] 市場數據抓取失敗: {e}")
+        return {"xau_price": 0, "xau_change_pct": 0, "dxy_price": 0, "dxy_change_pct": 0}
+
+# ─── 夥伴4：生成市場分析文章 ─────────────────────────────
+
+def _run_partner4(market_data):
+    """用夥伴4 system prompt + 當日數據，生成結構化市場分析 JSON"""
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not anthropic_key:
+        return None
+
+    xau = market_data["xau_price"]
+    xau_chg = market_data["xau_change_pct"]
+    dxy = market_data["dxy_price"]
+    dxy_chg = market_data["dxy_change_pct"]
+    today = datetime.now().strftime("%Y年%m月%d日")
+    direction = "上漲" if xau_chg > 0 else "下跌"
+    dxy_direction = "走強" if dxy_chg > 0 else "走弱"
+
+    user_prompt = f"""【{today} 市場數據】
+黃金現貨（XAU/USD）：{xau} USD（今日{direction} {abs(xau_chg):.2f}%）
+美元指數（DXY）：{dxy}（今日{dxy_direction} {abs(dxy_chg):.3f}%）
+
+請根據以上數據生成今日黃金市場分析，輸出格式嚴格遵照系統指示的 JSON 結構。"""
+
+    try:
+        client = Anthropic(api_key=anthropic_key)
+        msg = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=800,
+            system=PARTNER4_SYSTEM,
+            messages=[{"role": "user", "content": user_prompt}]
+        )
+        raw = msg.content[0].text.replace("```json", "").replace("```", "").strip()
+        return json.loads(raw)
+    except Exception as e:
+        print(f"[Orchestrator] 夥伴4文章生成失敗: {e}")
+        return None
+
+# ─── 夥伴3：根據夥伴4文章生成 Threads 草稿 ───────────────
+
+def _run_partner3(article, market_data):
+    """把夥伴4的分析文章傳給夥伴3，產出3個版本的 Threads 草稿"""
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not anthropic_key or not article:
+        return []
+
+    xau = market_data["xau_price"]
+    xau_chg = market_data["xau_change_pct"]
+    direction = "上漲" if xau_chg > 0 else "下跌"
+
+    # 把夥伴4的分析整理成給夥伴3的素材
+    article_summary = f"""【今日黃金分析素材】
+標題：{article.get('title', '')}
+行情摘要：{article.get('market_status', '')}
+關鍵價位：{article.get('key_levels', '')}
+操盤方向：{article.get('gino_strategy', '')}
+本週重點：{article.get('weekly_notes', '')}
+
+今日 XAU/USD：{xau} USD（{direction} {abs(xau_chg):.2f}%）"""
+
+    user_prompt = f"""以下是今日的市場分析素材，請根據這些內容為 Gino 生成3個版本的 Threads 貼文草稿：
+
+{article_summary}
+
+嚴格按照系統指示的 JSON 格式輸出，3個版本分別用不同貼文類型。"""
+
+    try:
+        client = Anthropic(api_key=anthropic_key)
+        msg = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1200,
+            system=PARTNER3_SYSTEM,
+            messages=[{"role": "user", "content": user_prompt}]
+        )
+        raw = msg.content[0].text.replace("```json", "").replace("```", "").strip()
+        result = json.loads(raw)
+        return result.get("drafts", [])
+    except Exception as e:
+        print(f"[Orchestrator] 夥伴3草稿生成失敗: {e}")
+        return []
+
+# ─── 儲存到 DB ────────────────────────────────────────────
+
+def _save_article(conn, date_str, article, market_data):
+    """夥伴4文章存入 orchestrator_articles"""
+    conn.run(
+        """INSERT INTO orchestrator_articles
+            (date, title, market_status, key_levels, gino_strategy, weekly_notes, full_content, xau_price, dxy_price)
+           VALUES (:date, :title, :market_status, :key_levels, :gino_strategy, :weekly_notes, :full_content, :xau_price, :dxy_price)""",
+        date=date_str,
+        title=article.get("title", ""),
+        market_status=article.get("market_status", ""),
+        key_levels=article.get("key_levels", ""),
+        gino_strategy=article.get("gino_strategy", ""),
+        weekly_notes=article.get("weekly_notes", ""),
+        full_content=article.get("full_content", ""),
+        xau_price=market_data["xau_price"],
+        dxy_price=market_data["dxy_price"]
+    )
+
+def _save_social_drafts(conn, date_str, drafts):
+    """夥伴3草稿存入 social_drafts"""
+    for d in drafts:
+        conn.run(
+            """INSERT INTO social_drafts (date, version, platform, style, content)
+               VALUES (:date, :version, :platform, :style, :content)""",
+            date=date_str,
+            version=d.get("version", 0),
+            platform="threads",
+            style=d.get("style", ""),
+            content=d.get("content", "")
+        )
+
+# ─── 主流程 ───────────────────────────────────────────────
+
+def run_orchestrator():
+    """
+    Orchestrator 主流程：
+    1. 抓取 XAU/USD、DXY 數據
+    2. 夥伴4 生成市場分析文章
+    3. 夥伴3 根據夥伴4文章生成3個 Threads 草稿
+    4. 存入 PostgreSQL
+    """
+    today = datetime.now().strftime("%Y-%m-%d")
+    print(f"[Orchestrator] 開始執行 {today}")
+
+    # 步驟1：抓市場數據
+    market_data = _fetch_market_data()
+    print(f"[Orchestrator] 市場數據：XAU={market_data['xau_price']} DXY={market_data['dxy_price']}")
+
+    # 步驟2：夥伴4 生成分析文章
+    article = _run_partner4(market_data)
+    if not article:
+        print("[Orchestrator] 夥伴4失敗，中止流程")
+        return
+
+    print(f"[Orchestrator] 夥伴4完成：{article.get('title', '')}")
+
+    # 步驟3：夥伴3 根據夥伴4文章生成 Threads 草稿
+    drafts = _run_partner3(article, market_data)
+    print(f"[Orchestrator] 夥伴3完成：{len(drafts)} 個草稿")
+
+    # 步驟4：存入 DB
+    try:
+        conn = _get_db()
+        _save_article(conn, today, article, market_data)
+        if drafts:
+            _save_social_drafts(conn, today, drafts)
+        print(f"[Orchestrator] 儲存完成：{today}")
+    except Exception as e:
+        print(f"[Orchestrator] 儲存失敗: {e}")

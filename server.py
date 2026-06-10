@@ -11,6 +11,9 @@ import time
 import yfinance as yf
 from anthropic import Anthropic
 from openai import OpenAI
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+from automation.orchestrator import run_orchestrator, init_orchestrator_tables
 
 app = Flask(__name__)
 CORS(app)
@@ -101,6 +104,11 @@ try:
     print("資料庫初始化成功")
 except Exception as e:
     print(f"資料庫初始化失敗: {e}")
+
+try:
+    init_orchestrator_tables()
+except Exception as e:
+    print(f"Orchestrator 表初始化失敗: {e}")
 
 # ─── 市場數據 ─────────────────────────────────────────────
 
@@ -620,6 +628,19 @@ def scheduler():
 scheduler_thread = threading.Thread(target=scheduler, daemon=True)
 scheduler_thread.start()
 
+# ─── APScheduler：Orchestrator 每日流水線 ─────────────────
+# 夥伴4 → 夥伴3 串聯流程，台灣時間 08:00（UTC 00:00）執行
+# 寫入 orchestrator_articles + social_drafts，不影響現有排程
+_orch_scheduler = BackgroundScheduler(timezone="UTC")
+_orch_scheduler.add_job(
+    run_orchestrator,
+    trigger=CronTrigger(hour=0, minute=0),
+    id="orchestrator_daily",
+    replace_existing=True
+)
+_orch_scheduler.start()
+print("APScheduler 已啟動：Orchestrator 每日 UTC 00:00 執行")
+
 # ─── API 路由 ─────────────────────────────────────────────
 
 @app.route('/')
@@ -1012,6 +1033,76 @@ def get_signal_stats():
             "win_rate":win_rate,"avg_pnl":round(avg_pnl,1) if avg_pnl else 0,"streak":streak})
     except Exception as e:
         return jsonify({"ok":False,"error":str(e)}),500
+
+# ─── Orchestrator API ─────────────────────────────────────
+
+@app.route('/api/daily-content', methods=['GET'])
+def get_daily_content():
+    """取得今日 Orchestrator 產出：市場分析文章 + Threads 草稿"""
+    date = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
+    try:
+        conn = get_db()
+        art_rows = conn.run(
+            """SELECT id, date, title, market_status, key_levels, gino_strategy, weekly_notes,
+                      full_content, xau_price, dxy_price, created_at
+               FROM orchestrator_articles WHERE date = :date
+               ORDER BY created_at DESC LIMIT 1""",
+            date=date)
+        draft_rows = conn.run(
+            """SELECT id, date, version, platform, style, content, is_published, created_at
+               FROM social_drafts WHERE date = :date
+               ORDER BY version""",
+            date=date)
+
+        article = None
+        if art_rows:
+            cols = ['id','date','title','market_status','key_levels','gino_strategy',
+                    'weekly_notes','full_content','xau_price','dxy_price','created_at']
+            article = dict(zip(cols, art_rows[0]))
+            article['date'] = str(article['date'])
+            article['created_at'] = str(article['created_at'])
+
+        dcols = ['id','date','version','platform','style','content','is_published','created_at']
+        drafts_list = [dict(zip(dcols, r)) for r in draft_rows]
+        for d in drafts_list:
+            d['date'] = str(d['date'])
+            d['created_at'] = str(d['created_at'])
+
+        return jsonify({"ok": True, "date": date, "article": article, "drafts": drafts_list})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route('/api/social-drafts', methods=['GET'])
+def get_social_drafts():
+    """取得 social_drafts 表的貼文草稿，可用 date 篩選"""
+    date = request.args.get('date')
+    try:
+        conn = get_db()
+        if date:
+            rows = conn.run(
+                """SELECT id, date, version, platform, style, content, is_published, created_at
+                   FROM social_drafts WHERE date = :date ORDER BY version""",
+                date=date)
+        else:
+            rows = conn.run(
+                """SELECT id, date, version, platform, style, content, is_published, created_at
+                   FROM social_drafts ORDER BY created_at DESC LIMIT 30""")
+        cols = ['id','date','version','platform','style','content','is_published','created_at']
+        drafts_list = [dict(zip(cols, r)) for r in rows]
+        for d in drafts_list:
+            d['date'] = str(d['date'])
+            d['created_at'] = str(d['created_at'])
+        return jsonify({"ok": True, "drafts": drafts_list})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route('/api/orchestrator/trigger', methods=['POST'])
+def trigger_orchestrator():
+    """手動觸發 Orchestrator 流水線（需 Admin Key）"""
+    if request.headers.get('X-Admin-Key') != ADMIN_KEY:
+        return jsonify({"ok": False, "error": "未授權"}), 401
+    threading.Thread(target=run_orchestrator, daemon=True).start()
+    return jsonify({"ok": True, "message": "Orchestrator 已啟動，請稍候幾分鐘後查詢 /api/daily-content"})
 
 @app.route('/api/macro_prices', methods=['GET'])
 def get_macro_prices():
