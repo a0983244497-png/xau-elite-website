@@ -155,13 +155,27 @@ def fetch_eco_events():
         return []
 
 def fetch_gold_news():
-    try:
-        res = requests.get(f"https://finnhub.io/api/v1/news?category=forex&token={FINNHUB_KEY}", timeout=10)
-        data = res.json()
-        return [n for n in data if n.get('headline') and any(
-            kw in n['headline'].lower() for kw in ['gold','xau','fed','dollar','inflation'])][:5]
-    except:
-        return []
+    kws = ['gold','xau','fed','dollar','inflation','rate','treasury','yield','fomc','gdp','cpi']
+    all_raw, seen = [], set()
+    for cat in ['general','forex']:
+        try:
+            r = requests.get(f"https://finnhub.io/api/v1/news?category={cat}&token={FINNHUB_KEY}", timeout=10)
+            items = r.json()
+            if isinstance(items, list):
+                all_raw.extend(items)
+        except:
+            pass
+    result = []
+    for n in all_raw:
+        nid = n.get('id') or n.get('url','')
+        if nid in seen:
+            continue
+        seen.add(nid)
+        if n.get('headline') and any(kw in n['headline'].lower() for kw in kws):
+            result.append(n)
+            if len(result) >= 8:
+                break
+    return result
 
 # ─── Claude API ───────────────────────────────────────────
 
@@ -998,6 +1012,23 @@ def get_signal_stats():
             "win_rate":win_rate,"avg_pnl":round(avg_pnl,1) if avg_pnl else 0,"streak":streak})
     except Exception as e:
         return jsonify({"ok":False,"error":str(e)}),500
+
+@app.route('/api/macro_prices', methods=['GET'])
+def get_macro_prices():
+    syms = [('DXY','DX-Y.NYB'), ('VIX','^VIX'), ('US10Y','^TNX'), ('US2Y','^IRX')]
+    result = {}
+    for name, sym in syms:
+        try:
+            t = yf.Ticker(sym)
+            fi = t.fast_info
+            price = fi.last_price
+            prev = fi.previous_close
+            chg = price - prev
+            chg_pct = (chg / prev) * 100 if prev else 0
+            result[name] = {'price': round(price,3), 'change': round(chg,3), 'change_pct': round(chg_pct,2)}
+        except:
+            result[name] = {'price':0,'change':0,'change_pct':0}
+    return jsonify({'ok':True,'data':result})
 
 @app.route('/api/macro', methods=['GET'])
 def get_macro_data():

@@ -64,13 +64,23 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(8,11,18,0.92
 /* ── MAIN GRID ── */
 .main-grid{display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start;}
 
-/* ── WIDGETS COL ── */
+/* ── PRICE CARDS COL ── */
 .widgets-col{display:flex;flex-direction:column;gap:16px;}
-.widget-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
-.widget-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-.widget-title{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;}
-.widget-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 8px;border-radius:4px;background:var(--bg3);color:var(--text-dim);border:1px solid rgba(255,255,255,0.06);}
-.tv-container{height:220px;}
+.price-cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.price-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px 20px;transition:border-color 0.2s;}
+.price-card:hover{border-color:rgba(201,168,76,0.35);}
+.price-card-label{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;}
+.price-card-sym{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);margin-bottom:4px;}
+.price-card-val{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.price-card-chg{font-family:'IBM Plex Mono',monospace;font-size:12px;margin-bottom:4px;}
+.price-card-chg.up{color:var(--green);}
+.price-card-chg.down{color:var(--red);}
+.price-card-note{font-size:10px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;}
+.prices-section-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.prices-section-title{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;}
+.prices-section-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-dim);opacity:.7;}
+.prices-section-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+.prices-section-body{padding:16px;}
 
 /* ── RIGHT COL ── */
 .right-col{display:flex;flex-direction:column;gap:16px;}
@@ -131,6 +141,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(8,11,18,0.92
   .mkt-stats{grid-template-columns:1fr 1fr;}
   .fed-banner{padding:16px 20px;}
   .fed-rate{display:none;}
+  .price-cards-grid{grid-template-columns:1fr 1fr;}
 }
 </style>
 </head>
@@ -206,57 +217,46 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(8,11,18,0.92
 
   <div class="main-grid">
 
-    <!-- LEFT: TradingView widgets -->
+    <!-- LEFT: Market price cards -->
     <div class="widgets-col">
-
-      <!-- DXY -->
-      <div class="widget-card">
-        <div class="widget-head">
-          <span class="widget-title">美元指數 DXY</span>
-          <span class="widget-tag">TVC:DXY · 日線</span>
+      <div class="prices-section-wrap">
+        <div class="prices-section-head">
+          <span class="prices-section-title">市場指標</span>
+          <span class="prices-section-tag">延遲15分鐘</span>
         </div>
-        <div class="tv-container">
-          <div class="tradingview-widget-container" style="height:100%;width:100%">
-            <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-            {"autosize":true,"symbol":"TVC:DXY","interval":"D","timezone":"Asia/Taipei","theme":"dark","style":"1","locale":"zh_TW","enable_publishing":false,"hide_top_toolbar":false,"hide_legend":true,"save_image":false,"hide_volume":true}
-            </script>
+        <div class="prices-section-body">
+          <div class="price-cards-grid" id="macroPricesGrid">
+            <div class="price-card">
+              <div class="price-card-label">美元指數</div>
+              <div class="price-card-sym">DXY</div>
+              <div class="price-card-val" id="pc-dxy-val">—</div>
+              <div class="price-card-chg" id="pc-dxy-chg">—</div>
+              <div class="price-card-note">DX-Y.NYB</div>
+            </div>
+            <div class="price-card">
+              <div class="price-card-label">恐慌指數</div>
+              <div class="price-card-sym">VIX</div>
+              <div class="price-card-val" id="pc-vix-val">—</div>
+              <div class="price-card-chg" id="pc-vix-chg">—</div>
+              <div class="price-card-note">^VIX</div>
+            </div>
+            <div class="price-card">
+              <div class="price-card-label">美債10年殖利率</div>
+              <div class="price-card-sym">US10Y</div>
+              <div class="price-card-val" id="pc-us10y-val">—</div>
+              <div class="price-card-chg" id="pc-us10y-chg">—</div>
+              <div class="price-card-note">^TNX</div>
+            </div>
+            <div class="price-card">
+              <div class="price-card-label">美債2年殖利率</div>
+              <div class="price-card-sym">US2Y</div>
+              <div class="price-card-val" id="pc-us2y-val">—</div>
+              <div class="price-card-chg" id="pc-us2y-chg">—</div>
+              <div class="price-card-note">^IRX</div>
+            </div>
           </div>
         </div>
       </div>
-
-      <!-- US10Y Treasury -->
-      <div class="widget-card">
-        <div class="widget-head">
-          <span class="widget-title">美債10年期殖利率</span>
-          <span class="widget-tag">TVC:US10Y · 日線</span>
-        </div>
-        <div class="tv-container">
-          <div class="tradingview-widget-container" style="height:100%;width:100%">
-            <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-            {"autosize":true,"symbol":"TVC:US10Y","interval":"D","timezone":"Asia/Taipei","theme":"dark","style":"1","locale":"zh_TW","enable_publishing":false,"hide_top_toolbar":false,"hide_legend":true,"save_image":false,"hide_volume":true}
-            </script>
-          </div>
-        </div>
-      </div>
-
-      <!-- VIX -->
-      <div class="widget-card">
-        <div class="widget-head">
-          <span class="widget-title">恐慌指數 VIX</span>
-          <span class="widget-tag">TVC:VIX · 日線</span>
-        </div>
-        <div class="tv-container">
-          <div class="tradingview-widget-container" style="height:100%;width:100%">
-            <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-            {"autosize":true,"symbol":"TVC:VIX","interval":"D","timezone":"Asia/Taipei","theme":"dark","style":"1","locale":"zh_TW","enable_publishing":false,"hide_top_toolbar":false,"hide_legend":true,"save_image":false,"hide_volume":true}
-            </script>
-          </div>
-        </div>
-      </div>
-
     </div><!-- /widgets-col -->
 
     <!-- RIGHT: Eco events + news -->
@@ -335,11 +335,13 @@ async function loadMacroData(){
     } else {
       ecoEl.innerHTML = eco.map(e => {
         const imp = e.impact==='high'?'high':e.impact==='medium'?'medium':'low';
-        // Try to show date + time
-        const dateStr = e.date||'';
-        const rawTime = e.time||'';
-        const timeStr = rawTime.includes('T') ? rawTime.split('T')[1].substring(0,5) : rawTime.substring(0,5);
-        const display = dateStr ? dateStr.slice(5)+(timeStr?' '+timeStr:'') : (timeStr||'—');
+        // Robust date+time parse: Finnhub time field can be "YYYY-MM-DDTHH:MM:SS" or "YYYY-MM-DD"
+        const raw = e.time||e.date||'';
+        let datePart='', timePart='';
+        if(raw.includes('T')){ const [d,t]=raw.split('T'); datePart=d; timePart=t.substring(0,5); }
+        else if(raw.match(/^\d{4}-\d{2}-\d{2}$/)){ datePart=raw; }
+        else{ timePart=raw.substring(0,5); }
+        const display = datePart ? datePart.slice(5)+(timePart?' '+timePart:'') : (timePart||'—');
         return `<div class="eco-row">
           <span class="eco-date">${display}</span>
           <div class="eco-dot ${imp}"></div>
@@ -371,7 +373,31 @@ async function loadMacroData(){
   }catch(e){ console.warn('macro load failed', e); }
 }
 
+async function loadMacroPrices(){
+  try{
+    const res = await fetch('/api/macro_prices');
+    const data = await res.json();
+    if(!data.ok) return;
+    const cards = [
+      {key:'DXY', valId:'pc-dxy-val', chgId:'pc-dxy-chg', dec:3},
+      {key:'VIX', valId:'pc-vix-val', chgId:'pc-vix-chg', dec:2},
+      {key:'US10Y', valId:'pc-us10y-val', chgId:'pc-us10y-chg', dec:3},
+      {key:'US2Y', valId:'pc-us2y-val', chgId:'pc-us2y-chg', dec:3},
+    ];
+    cards.forEach(c=>{
+      const d = data.data[c.key];
+      if(!d) return;
+      document.getElementById(c.valId).textContent = d.price.toFixed(c.dec);
+      const chgEl = document.getElementById(c.chgId);
+      const chg = d.change_pct||0;
+      chgEl.textContent = (chg>=0?'+':'')+chg.toFixed(2)+'%  '+(chg>=0?'▲':'▼');
+      chgEl.className = 'price-card-chg '+(chg>=0?'up':'down');
+    });
+  }catch(e){ console.warn('macro prices load failed', e); }
+}
+
 loadMacroData();
+loadMacroPrices();
 </script>
 </body>
 </html>
