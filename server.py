@@ -14,6 +14,7 @@ from openai import OpenAI
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from automation.orchestrator import run_orchestrator, init_orchestrator_tables
+from automation.telegram_bot import handle_update as tg_handle_update
 
 app = Flask(__name__)
 CORS(app)
@@ -1470,6 +1471,44 @@ def feed_to_draft():
         return jsonify({"ok":True,"message":f"已生成 {len(saved)} 個草稿","drafts":saved})
     except Exception as e:
         return jsonify({"ok":False,"error":str(e)}),500
+
+# ─── Telegram Bot Webhook ─────────────────────────────────
+
+@app.route('/webhook/telegram', methods=['POST'])
+def telegram_webhook():
+    """接收 Telegram Bot 訊息推送（需設定 TELEGRAM_WEBHOOK_SECRET）"""
+    secret = request.headers.get('X-Telegram-Bot-Api-Secret-Token', '')
+    expected = os.environ.get('TELEGRAM_WEBHOOK_SECRET', '')
+    if expected and secret != expected:
+        return jsonify({"ok": False, "error": "invalid secret"}), 403
+    data = request.json or {}
+    threading.Thread(target=tg_handle_update, args=(data,), daemon=True).start()
+    return jsonify({"ok": True})
+
+@app.route('/api/telegram/set-webhook', methods=['POST'])
+def set_telegram_webhook():
+    """設定 Telegram Webhook URL，body: {"url": "https://your-app.railway.app"}（需 Admin Key）"""
+    if request.headers.get('X-Admin-Key') != ADMIN_KEY:
+        return jsonify({"ok": False, "error": "未授權"}), 401
+    body = request.json or {}
+    app_url = (body.get('url') or '').rstrip('/')
+    if not app_url:
+        return jsonify({"ok": False, "error": "請提供 url"}), 400
+    webhook_url = f"{app_url}/webhook/telegram"
+    secret = os.environ.get('TELEGRAM_WEBHOOK_SECRET', '')
+    token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+    payload = {"url": webhook_url, "allowed_updates": ["message"]}
+    if secret:
+        payload["secret_token"] = secret
+    try:
+        resp = requests.post(
+            f"https://api.telegram.org/bot{token}/setWebhook",
+            json=payload, timeout=15
+        )
+        result = resp.json()
+        return jsonify({"ok": result.get('ok', False), "telegram": result, "webhook_url": webhook_url})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.route('/admin/daily')
 def admin_daily():
