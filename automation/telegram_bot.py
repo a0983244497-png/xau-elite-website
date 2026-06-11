@@ -4,6 +4,7 @@ Telegram Bot Webhook 處理器
 """
 import os
 import threading
+import base64
 import requests as http
 from datetime import datetime
 import yfinance as yf
@@ -96,6 +97,8 @@ _P3 = """你是「社群內容創作夥伴」，熟悉台灣 Threads、Instagram
 _P1 = """你是「外匯教學夥伴」，負責為 Gino 老師撰寫外匯與黃金交易的基礎教學內容。
 目標：台灣有基礎的投資人。風格：清楚易懂、口語、重點條列、適合社群分享。
 不構成投資建議。輸出：繁體中文。"""
+
+_P2 = """你是黃金現貨交易教學助教，使用 Gino 的交易系統：大時區定位H4/日線→H1確認結構→M15找進場。支撐壓力位從圖表判讀結果取得，1:1爬樓梯停利，停損結構外。繁體中文台灣財經口吻輸出。"""
 
 # ─── 指令 Handler ──────────────────────────────────────────
 
@@ -345,6 +348,89 @@ def cmd_trigger(chat_id):
     cmd_daily_market(chat_id)
 
 
+# ─── 圖表判讀 ─────────────────────────────────────────────
+
+def _download_tg_photo(file_id):
+    """從 Telegram getFile 下載圖片，回傳 bytes；失敗回傳 None"""
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    if not token:
+        return None
+    try:
+        r = http.get(
+            f"https://api.telegram.org/bot{token}/getFile",
+            params={"file_id": file_id},
+            timeout=10
+        )
+        file_path = r.json()["result"]["file_path"]
+        img = http.get(
+            f"https://api.telegram.org/file/bot{token}/{file_path}",
+            timeout=30
+        )
+        return img.content
+    except Exception as e:
+        print(f"[TG Bot] 圖片下載失敗: {e}")
+        return None
+
+
+def cmd_chart_analysis(chat_id, photo_bytes):
+    """圖表判讀：GPT-4o Vision 識別 K 線圖結構 + 夥伴2 產出操作策略"""
+    key = os.environ.get("OPENAI_API_KEY")
+    if not key:
+        _send(chat_id, "❌ OPENAI_API_KEY 未設定")
+        return
+    try:
+        b64 = base64.b64encode(photo_bytes).decode("utf-8")
+        client = OpenAI(api_key=key)
+        resp = client.chat.completions.create(
+            model="gpt-4o",
+            max_tokens=1200,
+            messages=[
+                {"role": "system", "content": _P2},
+                {"role": "user", "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{b64}",
+                            "detail": "high"
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": (
+                            "請判讀這張 XAU/USD K 線圖，輸出格式：\n\n"
+                            "📍 【圖表時框】（從圖表判斷是 H4 / H1 / M15 等）\n\n"
+                            "📊 【趨勢方向】（多頭 / 空頭 / 盤整，一句話說明依據）\n\n"
+                            "🔑 【關鍵結構】\n"
+                            "• 上方壓力：$XXX（說明理由）\n"
+                            "• 下方支撐：$XXX（說明理由）\n"
+                            "• 近期高低點或重要結構位（如有）\n\n"
+                            "🎯 【今日操作策略】\n"
+                            "• 多單觸發條件：（價位 + 結構確認條件）\n"
+                            "• 空單觸發條件：（價位 + 結構確認條件）\n"
+                            "• 停損設置：（結構外多少點）\n"
+                            "• 停利目標：（1:1 爬樓梯，目標位）\n\n"
+                            "⚠️ 【注意事項】（1~2 點，口語化）"
+                        )
+                    }
+                ]}
+            ]
+        )
+        result = resp.choices[0].message.content.strip()
+        _send(chat_id, f"📊 <b>圖表判讀＋操作策略</b>\n━━━━━━━━━━━━━━━━━━━━\n\n{result}")
+    except Exception as e:
+        print(f"[TG Bot] 圖表分析失敗: {e}")
+        _send(chat_id, f"❌ 圖表分析失敗：{e}")
+
+
+def _handle_photo(chat_id, file_id):
+    """下載圖片 + 執行圖表分析（在獨立 thread 執行）"""
+    photo_bytes = _download_tg_photo(file_id)
+    if photo_bytes:
+        cmd_chart_analysis(chat_id, photo_bytes)
+    else:
+        _send(chat_id, "❌ 圖片下載失敗，請重試")
+
+
 # ─── 指令路由表 ───────────────────────────────────────────
 
 COMMANDS = {
@@ -379,7 +465,9 @@ HELP_TEXT = (
     "⚠️ 風險提示 — 今日重大風險\n"
     "🔁 觸發 — 執行完整 Orchestrator\n"
     "━━━━━━━━━━━━━━━━━━━━\n"
-    "傳送以上任一關鍵字即可觸發"
+    "📷 <b>傳圖片</b> — K 線圖判讀＋操作策略\n"
+    "━━━━━━━━━━━━━━━━━━━━\n"
+    "傳送關鍵字或圖片即可觸發"
 )
 
 # ─── 主入口 ───────────────────────────────────────────────
@@ -389,9 +477,21 @@ def handle_update(data):
     try:
         message = data.get('message') or data.get('channel_post') or {}
         chat_id = message.get('chat', {}).get('id')
-        text = (message.get('text') or '').strip()
+        if not chat_id:
+            return
 
-        if not chat_id or not text:
+        # ── 圖片：K 線圖判讀 ──────────────────────────────
+        photos = message.get('photo')
+        if photos:
+            file_id = photos[-1]['file_id']  # 最高解析度
+            print(f"[TG Bot] chat={chat_id} 收到圖片 file_id={file_id[:12]}...")
+            _send(chat_id, "⏳ 圖表判讀中，請稍候...")
+            threading.Thread(target=_handle_photo, args=(chat_id, file_id), daemon=True).start()
+            return
+
+        # ── 文字指令 ──────────────────────────────────────
+        text = (message.get('text') or '').strip()
+        if not text:
             return
 
         print(f"[TG Bot] chat={chat_id} text={text!r}")
