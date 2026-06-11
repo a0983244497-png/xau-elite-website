@@ -1437,6 +1437,14 @@ def admin_daily():
         return jsonify({"ok": False, "error": "密碼錯誤"}), 401
     return send_from_directory('.', 'admin_daily.html')
 
+@app.route('/tools/post-generator')
+def post_generator():
+    """貼文產生器工具頁（需 Admin Key）"""
+    key = request.args.get('key', '')
+    if key != ADMIN_KEY:
+        return jsonify({"ok": False, "error": "需要 Admin Key，請在 URL 加上 ?key=YOUR_KEY"}), 401
+    return send_from_directory('templates', 'post_generator.html')
+
 @app.route('/<path:path>')
 def serve_file(path): return send_from_directory('.', path)
 

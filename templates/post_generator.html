@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gino 貼文產生器</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=Noto+Sans+TC:wght@300;400;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --bg: #F5F0E8; --gold: #C4933A; --dark: #1E1A16; --mid: #6B5E50; --light: #B0A090; --card: #FAF7F2; --border: #E0D5C5; }
+  body { background: var(--bg); font-family: 'Noto Sans TC', sans-serif; color: var(--dark); min-height: 100vh; padding: 32px 16px 60px; }
+  .header { text-align: center; margin-bottom: 36px; }
+  .header .tag { font-size: 11px; letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; margin-bottom: 10px; }
+  .header h1 { font-family: 'Noto Serif TC', serif; font-size: 28px; font-weight: 600; line-height: 1.4; }
+  .header p { font-size: 13px; color: var(--mid); margin-top: 8px; line-height: 1.7; }
+  .header .divider { width: 40px; height: 1.5px; background: var(--gold); margin: 14px auto 0; }
+  .card { background: var(--card); border-radius: 4px; padding: 24px 20px; margin-bottom: 16px; border: 1px solid var(--border); }
+  .field-label { font-size: 11px; letter-spacing: 0.2em; color: var(--gold); text-transform: uppercase; margin-bottom: 10px; display: block; }
+  .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .type-btn { padding: 10px 8px; border: 1.5px solid var(--border); background: transparent; border-radius: 3px; font-family: 'Noto Sans TC', sans-serif; font-size: 13px; color: var(--mid); cursor: pointer; text-align: center; transition: all 0.15s; line-height: 1.4; }
+  .type-btn:hover { border-color: var(--gold); color: var(--dark); }
+  .type-btn.active { border-color: var(--gold); background: var(--gold); color: #fff; font-weight: 700; }
+  textarea, input { width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: 3px; padding: 12px 14px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; color: var(--dark); resize: vertical; outline: none; transition: border-color 0.15s; line-height: 1.7; }
+  textarea:focus, input:focus { border-color: var(--gold); }
+  textarea { min-height: 90px; }
+  .api-row { display: flex; gap: 8px; align-items: center; }
+  .api-row input { flex: 1; }
+  .save-btn { padding: 10px 16px; background: var(--gold); color: #fff; border: none; border-radius: 3px; font-size: 13px; cursor: pointer; white-space: nowrap; font-family: 'Noto Sans TC', sans-serif; }
+  .api-hint { font-size: 11px; color: var(--light); margin-top: 6px; }
+  .api-saved { font-size: 11px; color: #5a8a5a; margin-top: 6px; display: none; }
+  .count-row { display: flex; gap: 8px; }
+  .count-btn { flex: 1; padding: 10px; border: 1.5px solid var(--border); background: transparent; border-radius: 3px; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; color: var(--mid); cursor: pointer; text-align: center; transition: all 0.15s; }
+  .count-btn.active { border-color: var(--gold); background: var(--gold); color: #fff; font-weight: 700; }
+  .gen-btn { width: 100%; padding: 16px; background: var(--dark); color: var(--gold); border: none; border-radius: 3px; font-family: 'Noto Serif TC', serif; font-size: 16px; font-weight: 600; letter-spacing: 0.15em; cursor: pointer; transition: opacity 0.15s; margin-top: 8px; }
+  .gen-btn:hover { opacity: 0.85; }
+  .gen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .loading { display: none; text-align: center; padding: 32px 0; }
+  .loading.show { display: block; }
+  .loading-dot { display: inline-block; width: 8px; height: 8px; background: var(--gold); border-radius: 50%; margin: 0 4px; animation: bounce 1.2s infinite; }
+  .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,80%,100%{transform:translateY(0);opacity:0.4} 40%{transform:translateY(-8px);opacity:1} }
+  .loading p { font-size: 13px; color: var(--mid); margin-top: 14px; }
+  .output-area { display: none; }
+  .output-area.show { display: block; }
+  .output-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .output-header span { font-size: 11px; letter-spacing: 0.2em; color: var(--gold); text-transform: uppercase; }
+  .reset-btn { font-size: 12px; color: var(--light); background: none; border: none; cursor: pointer; text-decoration: underline; }
+  .result-card { background: var(--card); border: 1px solid var(--border); border-radius: 4px; padding: 20px; margin-bottom: 14px; }
+  .result-version { font-size: 10px; letter-spacing: 0.2em; color: var(--gold); text-transform: uppercase; margin-bottom: 12px; }
+  .result-text { font-size: 14px; line-height: 1.9; color: var(--dark); white-space: pre-wrap; }
+  .copy-btn { margin-top: 14px; padding: 8px 16px; background: transparent; border: 1.5px solid var(--gold); border-radius: 2px; font-family: 'Noto Sans TC', sans-serif; font-size: 12px; color: var(--gold); cursor: pointer; transition: all 0.15s; }
+  .copy-btn:hover, .copy-btn.copied { background: var(--gold); color: #fff; }
+  .error-box { display: none; background: #fff5f0; border: 1px solid #e0b090; border-radius: 3px; padding: 14px 16px; font-size: 13px; color: #8a4020; margin-top: 12px; line-height: 1.7; }
+  .error-box.show { display: block; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="tag">Gino × AI</div>
+  <h1>貼文產生器</h1>
+  <p>輸入今日狀況，一鍵產出 Gino 風格文案</p>
+  <div class="divider"></div>
+</div>
+
+<div class="card">
+  <span class="field-label">OpenAI API Key</span>
+  <div class="api-row">
+    <input type="password" id="apiKeyInput" placeholder="sk-...">
+    <button class="save-btn" onclick="saveKey()">儲存</button>
+  </div>
+  <p class="api-hint" id="apiHint">輸入後按儲存，下次自動帶入</p>
+  <p class="api-saved" id="apiSaved">✓ API Key 已儲存</p>
+</div>
+
+<div class="card">
+  <span class="field-label">貼文類型</span>
+  <div class="type-grid">
+    <button class="type-btn active" data-type="溫馨提醒">🔔 溫馨提醒</button>
+    <button class="type-btn" data-type="市場回顧">📊 市場回顧</button>
+    <button class="type-btn" data-type="個人觀點">💬 個人觀點</button>
+    <button class="type-btn" data-type="輪播貼文">🖼️ 輪播文案</button>
+    <button class="type-btn" data-type="生活混搭">☕ 生活混搭</button>
+    <button class="type-btn" data-type="互動幽默">😄 互動幽默</button>
+  </div>
+</div>
+
+<div class="card">
+  <span class="field-label">今日市場狀況</span>
+  <textarea id="marketInput" placeholder="例如：黃金目前在 4520 附近震盪，上方關注 4535、4547，今晚沒有重要數據"></textarea>
+</div>
+
+<div class="card">
+  <span class="field-label">補充素材（選填）</span>
+  <textarea id="extraInput" placeholder="例如：今天早上多單被洗出場，中午反手空單獲利..." style="min-height:70px;"></textarea>
+</div>
+
+<div class="card">
+  <span class="field-label">產出版本數</span>
+  <div class="count-row">
+    <button class="count-btn" data-count="1">1 版</button>
+    <button class="count-btn active" data-count="3">3 版</button>
+    <button class="count-btn" data-count="5">5 版</button>
+  </div>
+</div>
+
+<button class="gen-btn" id="genBtn">產出文案 →</button>
+<div class="error-box" id="errorBox"></div>
+
+<div class="loading" id="loading">
+  <div>
+    <span class="loading-dot"></span>
+    <span class="loading-dot"></span>
+    <span class="loading-dot"></span>
+  </div>
+  <p>Gino 的 AI 正在思考中...</p>
+</div>
+
+<div class="output-area" id="outputArea">
+  <div class="output-header">
+    <span>產出結果</span>
+    <button class="reset-btn" id="resetBtn">重新產出</button>
+  </div>
+  <div id="resultsContainer"></div>
+</div>
+
+<script>
+  let selectedType = '溫馨提醒';
+  let selectedCount = 3;
+
+  window.addEventListener('load', () => {
+    const saved = localStorage.getItem('gino_openai_key');
+    if (saved) {
+      document.getElementById('apiKeyInput').value = saved;
+      document.getElementById('apiHint').style.display = 'none';
+      document.getElementById('apiSaved').style.display = 'block';
+    }
+  });
+
+  function saveKey() {
+    const key = document.getElementById('apiKeyInput').value.trim();
+    if (!key) return;
+    localStorage.setItem('gino_openai_key', key);
+    document.getElementById('apiHint').style.display = 'none';
+    document.getElementById('apiSaved').style.display = 'block';
+  }
+
+  document.querySelectorAll('.type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedType = btn.dataset.type;
+    });
+  });
+
+  document.querySelectorAll('.count-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedCount = parseInt(btn.dataset.count);
+    });
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    document.getElementById('outputArea').classList.remove('show');
+    document.getElementById('errorBox').classList.remove('show');
+  });
+
+  document.getElementById('genBtn').addEventListener('click', generatePost);
+
+  function parseVersions(raw, count) {
+    // 方法1：直接 JSON 解析
+    try {
+      const clean = raw.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(clean);
+      if (parsed.versions && parsed.versions.length > 0) return parsed.versions;
+    } catch(e) {}
+
+    // 方法2：用 regex 抓 versions 陣列內容
+    try {
+      const match = raw.match(/"versions"\s*:\s*\[([\s\S]*)\]/);
+      if (match) {
+        const arr = JSON.parse('[' + match[1] + ']');
+        if (arr.length > 0) return arr;
+      }
+    } catch(e) {}
+
+    // 方法3：用版本標記分割純文字
+    try {
+      const parts = raw.split(/版本\s*[1-9][\s\S]*?(?=版本\s*[2-9]|$)/g).filter(s => s.trim().length > 20);
+      if (parts.length > 0) return parts.map(s => s.replace(/^版本\s*\d+[：:]\s*/,'').trim());
+    } catch(e) {}
+
+    // 方法4：直接把整段文字當一個版本
+    return [raw.trim()];
+  }
+
+  async function generatePost() {
+    const apiKey = document.getElementById('apiKeyInput').value.trim();
+    const market = document.getElementById('marketInput').value.trim();
+    const extra = document.getElementById('extraInput').value.trim();
+
+    if (!apiKey) { showError('請填入你的 OpenAI API Key！'); return; }
+    if (!market) { showError('請填入今日市場狀況！'); return; }
+
+    document.getElementById('errorBox').classList.remove('show');
+    document.getElementById('outputArea').classList.remove('show');
+    document.getElementById('loading').classList.add('show');
+    document.getElementById('genBtn').disabled = true;
+
+    const systemPrompt = `你是 Gino（朱育生）的社群貼文助理。請嚴格依照以下資料產出貼文。
+
+【Gino 基本資料】
+黃金交易員＋交易教學老師，交易資歷2.5年，主做黃金日內單，已婚8年兩個小孩，從餐飲業便當店出身轉型。帳號：yusheng.zhu.14
+
+【Gino 的故事】
+從小做餐飲開便當店，每天五點起床忙到晚上用時間換錢。弟弟接觸外匯，跟著去台中參加Sky老師活動後開始學交易。某一夜賠掉5000美金，當下不是崩潰而是「解脫」，因為終於知道哪裡錯了。現在每月穩定出金，帶學員做教學。
+
+【語氣規則】
+口語直接像跟朋友說話、有溫度偶爾幽默、不過度勵志不說空話、適度使用emoji（🤣😊😍🥲👍）、偶爾互動結尾請粉絲留言、不超過150字（輪播除外）
+
+【貼文類型範例】
+溫馨提醒：「溫馨提醒：今天黃金在4520附近晃，上面先關注4535、4547。今晚沒重大數據，別硬做！各位還活著嗎🤣」
+市場回顧：「早上做黃金真的被洗到差點中風🥲 行情來回刷，先試空被掃損，中午反手多單，4498上車，最後停利4531，各位有跟到留言讓我知道😊」
+個人觀點：「明天黃金先看戲，觀察有沒有反彈到4337、4366 再決定做多做空🙃」
+生活混搭：「五月最後一天完美關門，感謝老川畫線😍 黃金繼續關注35、47、60，我要騎車了你們自己盯🤣」
+互動幽默：「台股跌了買一點，大跌再買一點 合理的買入都是為了以後不用睡公園 各位認同嗎🤣🤣🤣」
+輪播文案：5張結構（封面鉤子／共鳴痛點／故事轉折／務實專業／CTA）每張30-50字
+
+重要：請用以下格式回覆，每個版本之間用 ---SPLIT--- 分隔，不要加任何其他說明：
+版本1內容
+---SPLIT---
+版本2內容
+---SPLIT---
+版本3內容`;
+
+    const userPrompt = `類型：${selectedType}
+今日市場狀況：${market}${extra ? '\n補充素材：' + extra : ''}
+請產出 ${selectedCount} 個版本，每個版本風格略有不同。`;
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          max_tokens: 2000,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ]
+        })
+      });
+
+      const data = await response.json();
+      if (data.error) throw new Error(data.error.message);
+
+      const raw = data.choices[0].message.content;
+      const versions = raw.split('---SPLIT---').map(s => s.trim()).filter(s => s.length > 0);
+
+      document.getElementById('loading').classList.remove('show');
+      document.getElementById('genBtn').disabled = false;
+
+      const container = document.getElementById('resultsContainer');
+      container.innerHTML = '';
+      versions.forEach((text, i) => {
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        card.innerHTML = `
+          <div class="result-version">版本 ${i + 1}</div>
+          <div class="result-text">${escapeHtml(text)}</div>
+          <button class="copy-btn" onclick="copyText(this, ${JSON.stringify(text)})">複製文案</button>
+        `;
+        container.appendChild(card);
+      });
+
+      document.getElementById('outputArea').classList.add('show');
+      document.getElementById('outputArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    } catch (err) {
+      document.getElementById('loading').classList.remove('show');
+      document.getElementById('genBtn').disabled = false;
+      showError('產出失敗：' + err.message);
+    }
+  }
+
+  function showError(msg) {
+    const errBox = document.getElementById('errorBox');
+    errBox.textContent = msg;
+    errBox.classList.add('show');
+  }
+
+  function copyText(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '已複製 ✓';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '複製文案'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }
+</script>
+</body>
+</html>
