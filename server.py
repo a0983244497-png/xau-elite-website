@@ -23,7 +23,7 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 ADMIN_KEY = os.environ.get("ADMIN_KEY", "xauelite2024")
 ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY")
 OPENAI_KEY = os.environ.get("OPENAI_KEY")
-FINNHUB_KEY = os.environ.get("FINNHUB_KEY")
+TWELVE_DATA_KEY = os.environ.get("TWELVE_DATA_KEY")
 
 # ─── 資料庫 ──────────────────────────────────────────────
 
@@ -114,77 +114,50 @@ except Exception as e:
 # ─── 市場數據 ─────────────────────────────────────────────
 
 def fetch_gold_price():
+    """用 Twelve Data 抓取 XAU/USD 即時報價，回傳 (price, change, change_pct)"""
+    key = TWELVE_DATA_KEY
+    if not key:
+        return 0, 0, 0
     try:
-        res = requests.get(f"https://finnhub.io/api/v1/quote?symbol=OANDA:XAU_USD&token={FINNHUB_KEY}", timeout=10)
-        data = res.json()
-        price = data.get('c', 0)
-        change = data.get('d', 0)
-        change_pct = data.get('dp', 0)
-        if price and price > 0:
-            return price, change, change_pct
-    except:
-        pass
-    try:
-        xau = yf.Ticker("GC=F")
-        xi = xau.fast_info
-        xau_price = xi.last_price
-        xau_prev = xi.previous_close
-        xau_chg = xau_price - xau_prev
-        xau_chg_pct = (xau_chg / xau_prev) * 100
-        return round(xau_price, 2), round(xau_chg, 2), round(xau_chg_pct, 2)
-    except:
+        r = requests.get(
+            f"https://api.twelvedata.com/quote?symbol=XAU/USD&apikey={key}",
+            timeout=10
+        )
+        d = r.json()
+        if d.get("status") == "error":
+            print(f"Twelve Data XAU 錯誤: {d.get('message')}")
+            return 0, 0, 0
+        price = round(float(d.get("close") or 0), 2)
+        change = round(float(d.get("change") or 0), 2)
+        change_pct = round(float(d.get("percent_change") or 0), 2)
+        return price, change, change_pct
+    except Exception as e:
+        print(f"Twelve Data XAU 失敗: {e}")
         return 0, 0, 0
 
 def fetch_market_data_yfinance():
+    """用 Twelve Data 抓取 XAU/USD 與 DXY 即時報價"""
+    key = TWELVE_DATA_KEY
+    if not key:
+        return {"xau_price": 0, "xau_change_pct": 0, "dxy_price": 0, "dxy_change_pct": 0}
     try:
-        xau = yf.Ticker("GC=F")
-        xi = xau.fast_info
-        xau_price = xi.last_price
-        xau_prev = xi.previous_close
-        xau_chg = ((xau_price - xau_prev) / xau_prev) * 100
-        dxy = yf.Ticker("DX-Y.NYB")
-        di = dxy.fast_info
-        dxy_price = di.last_price
-        dxy_prev = di.previous_close
-        dxy_chg = ((dxy_price - dxy_prev) / dxy_prev) * 100
-        return {"xau_price": round(xau_price,2), "xau_change_pct": round(xau_chg,2),
-                "dxy_price": round(dxy_price,3), "dxy_change_pct": round(dxy_chg,3)}
+        r = requests.get(
+            f"https://api.twelvedata.com/quote?symbol=XAU/USD,DXY&apikey={key}",
+            timeout=10
+        )
+        d = r.json()
+        xau = d.get("XAU/USD", {})
+        dxy = d.get("DXY", {})
+        return {
+            "xau_price": round(float(xau.get("close") or 0), 2),
+            "xau_change_pct": round(float(xau.get("percent_change") or 0), 2),
+            "dxy_price": round(float(dxy.get("close") or 0), 3),
+            "dxy_change_pct": round(float(dxy.get("percent_change") or 0), 3),
+        }
     except Exception as e:
-        print(f"yfinance 失敗: {e}")
-        price, change, change_pct = fetch_gold_price()
+        print(f"Twelve Data 批次失敗: {e}")
+        price, _, change_pct = fetch_gold_price()
         return {"xau_price": price, "xau_change_pct": change_pct, "dxy_price": 0, "dxy_change_pct": 0}
-
-def fetch_eco_events():
-    try:
-        today = datetime.utcnow().strftime('%Y-%m-%d')
-        res = requests.get(f"https://finnhub.io/api/v1/calendar/economic?from={today}&to={today}&token={FINNHUB_KEY}", timeout=10)
-        data = res.json()
-        return [e for e in (data.get('economicCalendar') or []) if e.get('country') in ['US','USD']][:5]
-    except:
-        return []
-
-def fetch_gold_news():
-    kws = ['gold','xau','fed','dollar','inflation','rate','treasury','yield','fomc','gdp','cpi']
-    all_raw, seen = [], set()
-    for cat in ['general','forex']:
-        try:
-            r = requests.get(f"https://finnhub.io/api/v1/news?category={cat}&token={FINNHUB_KEY}", timeout=10)
-            items = r.json()
-            if isinstance(items, list):
-                all_raw.extend(items)
-        except:
-            pass
-    result = []
-    for n in all_raw:
-        nid = n.get('id') or n.get('url','')
-        if nid in seen:
-            continue
-        seen.add(nid)
-        if n.get('headline') and any(kw in n['headline'].lower() for kw in kws):
-            result.append(n)
-            if len(result) >= 8:
-                break
-    return result
 
 # ─── Claude API ───────────────────────────────────────────
 
@@ -380,9 +353,7 @@ def run_daily_analysis():
     print("執行每日自動分析...")
     today = datetime.utcnow().strftime('%Y-%m-%d')
     price, change, change_pct = fetch_gold_price()
-    eco_events = fetch_eco_events()
-    news = fetch_gold_news()
-    analysis = generate_analysis_with_claude(price, change, change_pct, eco_events, news)
+    analysis = generate_analysis_with_claude(price, change, change_pct, [], [])
     try:
         conn = get_db()
         conn.run("""INSERT INTO daily_analysis
@@ -442,22 +413,6 @@ def run_partner3_drafts():
 
 # ─── 素材收集爬蟲 ─────────────────────────────────────────
 
-def fetch_finnhub_news():
-    try:
-        res = requests.get(
-            f"https://finnhub.io/api/v1/news?category=forex&token={FINNHUB_KEY}", timeout=10)
-        data = res.json()
-        kw = ['gold','xau','fed','dollar','inflation','rate','treasury']
-        items = [n for n in data if n.get('headline') and
-                 any(k in n['headline'].lower() for k in kw)][:10]
-        return [{"title": n['headline'][:500],
-                 "summary": (n.get('summary') or '')[:400],
-                 "url": n.get('url',''),
-                 "source": "Finnhub",
-                 "category": "trading"} for n in items]
-    except Exception as e:
-        print(f"Finnhub 新聞失敗: {e}")
-        return []
 
 def fetch_hackernews():
     try:
@@ -548,7 +503,6 @@ def generate_threads_drafts_from_feed(market_data, feed_items_list):
 def run_feed_collection():
     print("=== 素材收集：開始 ===")
     all_items = []
-    all_items.extend(fetch_finnhub_news())
     all_items.extend(fetch_hackernews())
     all_items.extend(fetch_ptt_hot())
     if not all_items:
@@ -678,13 +632,11 @@ def get_daily_analysis():
         rows = conn.run("SELECT * FROM daily_analysis WHERE date = :date", date=date)
         if not rows:
             price, change, change_pct = fetch_gold_price()
-            eco_events = fetch_eco_events()
-            news = fetch_gold_news()
-            analysis = generate_analysis_with_claude(price, change, change_pct, eco_events, news)
+            analysis = generate_analysis_with_claude(price, change, change_pct, [], [])
             return jsonify({"ok":True,"live":True,"date":date,"gold_price":price,"price_change":change,
                 "direction":analysis['direction'],"direction_text":analysis['direction_text'],
                 "bias_summary":analysis['bias_summary'],"bias_points":analysis['bias_points'],
-                "macro_text":analysis['macro_analysis'],"eco_events":eco_events,"news_items":news})
+                "macro_text":analysis['macro_analysis'],"eco_events":[],"news_items":[]})
         cols = ['id','date','direction','gold_price','price_change','bias_text','direction_text',
                 'key_levels','macro_text','eco_events','news_items','created_at','updated_at']
         row = dict(zip(cols, rows[0]))
@@ -705,12 +657,33 @@ def gold_price():
 
 @app.route('/api/ticker', methods=['GET'])
 def get_ticker_data():
-    syms = [('XAU', 'GC=F'), ('BTC', 'BTC-USD'), ('DXY', 'DX-Y.NYB'), ('US100', '^NDX')]
     result = {}
-    for name, sym in syms:
+    # XAU/USD 和 DXY 從 Twelve Data 抓取
+    td_key = TWELVE_DATA_KEY
+    if td_key:
         try:
-            t = yf.Ticker(sym)
-            fi = t.fast_info
+            r = requests.get(
+                f"https://api.twelvedata.com/quote?symbol=XAU/USD,DXY&apikey={td_key}",
+                timeout=10
+            )
+            d = r.json()
+            for label, sym in [('XAU', 'XAU/USD'), ('DXY', 'DXY')]:
+                q = d.get(sym, {})
+                result[label] = {
+                    'price': round(float(q.get('close') or 0), 2),
+                    'change': round(float(q.get('change') or 0), 2),
+                    'change_pct': round(float(q.get('percent_change') or 0), 2),
+                }
+        except:
+            result['XAU'] = {'price': 0, 'change': 0, 'change_pct': 0}
+            result['DXY'] = {'price': 0, 'change': 0, 'change_pct': 0}
+    else:
+        result['XAU'] = {'price': 0, 'change': 0, 'change_pct': 0}
+        result['DXY'] = {'price': 0, 'change': 0, 'change_pct': 0}
+    # BTC 和 US100 保留 yfinance
+    for name, sym in [('BTC', 'BTC-USD'), ('US100', '^NDX')]:
+        try:
+            fi = yf.Ticker(sym).fast_info
             price = fi.last_price
             prev = fi.previous_close
             chg = price - prev
@@ -1107,57 +1080,44 @@ def trigger_orchestrator():
 
 @app.route('/api/macro_prices', methods=['GET'])
 def get_macro_prices():
-    syms = [('DXY','DX-Y.NYB'), ('VIX','^VIX'), ('US10Y','^TNX'), ('US2Y','^IRX')]
     result = {}
-    for name, sym in syms:
+    # DXY 從 Twelve Data 抓取
+    td_key = TWELVE_DATA_KEY
+    if td_key:
         try:
-            t = yf.Ticker(sym)
-            fi = t.fast_info
+            r = requests.get(
+                f"https://api.twelvedata.com/quote?symbol=DXY&apikey={td_key}",
+                timeout=10
+            )
+            d = r.json()
+            result['DXY'] = {
+                'price': round(float(d.get('close') or 0), 3),
+                'change': round(float(d.get('change') or 0), 3),
+                'change_pct': round(float(d.get('percent_change') or 0), 2),
+            }
+        except:
+            result['DXY'] = {'price': 0, 'change': 0, 'change_pct': 0}
+    else:
+        result['DXY'] = {'price': 0, 'change': 0, 'change_pct': 0}
+    # VIX, US10Y, US2Y 保留 yfinance
+    for name, sym in [('VIX', '^VIX'), ('US10Y', '^TNX'), ('US2Y', '^IRX')]:
+        try:
+            fi = yf.Ticker(sym).fast_info
             price = fi.last_price
             prev = fi.previous_close
             chg = price - prev
             chg_pct = (chg / prev) * 100 if prev else 0
-            result[name] = {'price': round(price,3), 'change': round(chg,3), 'change_pct': round(chg_pct,2)}
+            result[name] = {'price': round(price, 3), 'change': round(chg, 3), 'change_pct': round(chg_pct, 2)}
         except:
-            result[name] = {'price':0,'change':0,'change_pct':0}
-    return jsonify({'ok':True,'data':result})
+            result[name] = {'price': 0, 'change': 0, 'change_pct': 0}
+    return jsonify({'ok': True, 'data': result})
 
 @app.route('/api/macro', methods=['GET'])
 def get_macro_data():
     try:
-        from_date = datetime.utcnow().strftime('%Y-%m-%d')
-        to_date = (datetime.utcnow() + timedelta(days=7)).strftime('%Y-%m-%d')
-        eco_events = []
-        try:
-            res = requests.get(f"https://finnhub.io/api/v1/calendar/economic?from={from_date}&to={to_date}&token={FINNHUB_KEY}", timeout=10)
-            data = res.json()
-            eco_events = [e for e in (data.get('economicCalendar') or []) if e.get('country') in ['US','USD']][:20]
-        except:
-            pass
-        news = []
-        try:
-            kws = ['gold','xau','fed','dollar','inflation','rate','treasury','yield','dxy','vix','fomc','gdp','cpi','ppi']
-            all_raw = []
-            for cat in ['general','forex']:
-                try:
-                    r2 = requests.get(f"https://finnhub.io/api/v1/news?category={cat}&token={FINNHUB_KEY}", timeout=10)
-                    all_raw.extend(r2.json() if isinstance(r2.json(), list) else [])
-                except:
-                    pass
-            seen_ids = set()
-            for n in all_raw:
-                if n.get('id') in seen_ids:
-                    continue
-                seen_ids.add(n.get('id'))
-                if n.get('headline') and any(kw in n['headline'].lower() for kw in kws):
-                    news.append(n)
-                    if len(news) >= 12:
-                        break
-        except:
-            pass
         price, change, change_pct = fetch_gold_price()
         mkt = fetch_market_data_yfinance()
-        return jsonify({"ok":True,"eco_events":eco_events,"news_items":news,
+        return jsonify({"ok":True,"eco_events":[],"news_items":[],
             "gold_price":price,"gold_change_pct":change_pct,
             "dxy_price":mkt.get('dxy_price',0),"dxy_change_pct":mkt.get('dxy_change_pct',0)})
     except Exception as e:

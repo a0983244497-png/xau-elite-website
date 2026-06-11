@@ -6,7 +6,6 @@ import os
 import threading
 import requests as http
 from datetime import datetime
-import yfinance as yf
 from openai import OpenAI
 
 # ─── 基礎工具 ──────────────────────────────────────────────
@@ -46,44 +45,27 @@ def _gpt(system, user, max_tokens=800):
         return f"（AI 生成失敗：{e}）"
 
 def _market():
-    """取得 XAU/USD 與 DXY 當前數據，回傳 dict"""
-    try:
-        xi = yf.Ticker("GC=F").fast_info
-        di = yf.Ticker("DX-Y.NYB").fast_info
-        xau_p = round(xi.last_price, 2)
-        xau_c = round(((xi.last_price - xi.previous_close) / xi.previous_close) * 100, 2)
-        dxy_p = round(di.last_price, 3)
-        dxy_c = round(((di.last_price - di.previous_close) / di.previous_close) * 100, 3)
-        return {"xau": xau_p, "xau_chg": xau_c, "dxy": dxy_p, "dxy_chg": dxy_c}
-    except Exception as e:
-        print(f"[TG Bot] 市場數據失敗: {e}")
+    """用 Twelve Data 取得 XAU/USD 與 DXY 即時報價"""
+    key = os.environ.get("TWELVE_DATA_KEY")
+    if not key:
         return {"xau": 0, "xau_chg": 0, "dxy": 0, "dxy_chg": 0}
-
-def _news_text(limit=10):
-    """從 Finnhub 抓取財經新聞，回傳純文字清單"""
-    fkey = os.environ.get("FINNHUB_KEY")
-    if not fkey:
-        return "（FINNHUB_KEY 未設定）"
-    kws = ['gold','xau','fed','dollar','inflation','rate','treasury','yield','fomc','gdp','cpi','market']
-    all_items, seen, result = [], set(), []
-    for cat in ['general', 'forex']:
-        try:
-            r = http.get(f"https://finnhub.io/api/v1/news?category={cat}&token={fkey}", timeout=10)
-            if isinstance(r.json(), list):
-                all_items.extend(r.json())
-        except:
-            pass
-    for n in all_items:
-        nid = n.get('id') or n.get('url', '')
-        if nid in seen:
-            continue
-        seen.add(nid)
-        hl = n.get('headline', '')
-        if hl and any(kw in hl.lower() for kw in kws):
-            result.append(hl)
-        if len(result) >= limit:
-            break
-    return "\n".join(f"- {h}" for h in result) if result else "（今日暫無相關新聞）"
+    try:
+        r = http.get(
+            f"https://api.twelvedata.com/quote?symbol=XAU/USD,DXY&apikey={key}",
+            timeout=10
+        )
+        d = r.json()
+        xau = d.get("XAU/USD", {})
+        dxy = d.get("DXY", {})
+        return {
+            "xau": round(float(xau.get("close") or 0), 2),
+            "xau_chg": round(float(xau.get("percent_change") or 0), 2),
+            "dxy": round(float(dxy.get("close") or 0), 3),
+            "dxy_chg": round(float(dxy.get("percent_change") or 0), 3),
+        }
+    except Exception as e:
+        print(f"[TG Bot] Twelve Data 失敗: {e}")
+        return {"xau": 0, "xau_chg": 0, "dxy": 0, "dxy_chg": 0}
 
 def _today():
     return datetime.now().strftime("%Y年%m月%d日")
@@ -236,17 +218,18 @@ def cmd_fun_post(chat_id):
 
 
 def cmd_big_news(chat_id):
-    """今日大新聞：Finnhub 新聞 → 夥伴4 整理摘要"""
+    """今日大新聞：夥伴4 根據市場數據與當前總經背景整理重點"""
     d = _today()
-    news = _news_text(10)
+    m = _market()
+    xdir = "上漲" if m['xau_chg'] > 0 else "下跌"
 
-    result = _gpt(_P4, f"""【{d} 今日財經新聞】
-{news}
+    result = _gpt(_P4, f"""【{d}】黃金 {m['xau']} USD（{xdir} {abs(m['xau_chg']):.2f}%），DXY {m['dxy']}。
 
-整理成重點摘要：
+根據你對當前全球總體經濟與市場環境的了解，整理今日值得關注的財經重點：
 📰 今日財經重點（3~5條，每條一行）
-💡 對黃金/外匯市場的影響（100字以內）
-口語，條列清楚。""", max_tokens=600)
+💡 每條附上對黃金/外匯市場的潛在影響（利多/利空/中性）
+🎯 綜合結論：黃金短期偏向
+口語，條列清楚，200字以內。""", max_tokens=600)
 
     _send(chat_id, f"📰 <b>今日財經大新聞</b>  {d}\n━━━━━━━━━━━━━━━━━━━━\n\n{result}")
 
@@ -332,15 +315,12 @@ def cmd_fed(chat_id):
 def cmd_risk(chat_id):
     """風險提示：當日重大風險事件提醒"""
     m = _market()
-    news = _news_text(6)
     d = _today()
 
-    result = _gpt(_P4, f"""【{d}】黃金 {m['xau']} USD，DXY {m['dxy']}
-今日新聞：
-{news}
+    result = _gpt(_P4, f"""【{d}】黃金 {m['xau']} USD，DXY {m['dxy']}。
 
-產出今日重大風險提示：
-⚠️ 風險事件（3~5點，每點一行）
+根據你對當前市場環境的了解，產出今日風險提示：
+⚠️ 需要關注的風險事件（3~5點，每點一行）
 🛡️ 應對建議（2~3點）
 今日適合交易嗎？（直接說是/否 + 理由）
 200字以內。""", max_tokens=500)
