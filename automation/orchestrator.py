@@ -254,6 +254,61 @@ def _save_social_drafts(conn, date_str, drafts):
             content=d.get("content", "")
         )
 
+# ─── Telegram 推送 ────────────────────────────────────────
+
+def _tg_send(text):
+    """發送單則 Telegram 訊息，使用 HTML 格式"""
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    if not token or not chat_id:
+        print("[Orchestrator] Telegram 環境變數未設定，跳過推送")
+        return False
+    try:
+        resp = requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"},
+            timeout=15
+        )
+        if not resp.ok:
+            print(f"[Orchestrator] Telegram 推送失敗: {resp.text}")
+            return False
+        return True
+    except Exception as e:
+        print(f"[Orchestrator] Telegram 推送例外: {e}")
+        return False
+
+def _push_to_telegram(article, drafts):
+    """依序推送夥伴4文章 + 夥伴3三個草稿到 Telegram"""
+    today = datetime.now().strftime("%Y年%m月%d日")
+
+    # ── 訊息1：夥伴4 市場分析 ──────────────────────────────
+    msg1 = (
+        f"📊 <b>今日黃金市場分析</b>  {today}\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"<b>{article.get('title','')}</b>\n\n"
+        f"📈 <b>行情摘要</b>\n{article.get('market_status','')}\n\n"
+        f"🎯 <b>關鍵價位</b>\n{article.get('key_levels','')}\n\n"
+        f"⚡ <b>操盤方向</b>\n{article.get('gino_strategy','')}\n\n"
+        f"📅 <b>本週重點</b>\n{article.get('weekly_notes','')}\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"{article.get('full_content','')}"
+    )
+    _tg_send(msg1)
+
+    # ── 訊息2-4：夥伴3 各版本草稿（分開發送方便複製）──────
+    version_labels = {1: "V1 溫馨提醒型", 2: "V2 市場回顧型", 3: "V3 個人觀點型"}
+    for d in drafts:
+        ver = d.get("version", 0)
+        style = d.get("style") or version_labels.get(ver, f"V{ver}")
+        msg = (
+            f"✍️ <b>{style}</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"{d.get('content','')}"
+        )
+        _tg_send(msg)
+
+    print(f"[Orchestrator] Telegram 推送完成：1篇文章 + {len(drafts)} 個草稿")
+
 # ─── 主流程 ───────────────────────────────────────────────
 
 def run_orchestrator():
@@ -292,3 +347,6 @@ def run_orchestrator():
         print(f"[Orchestrator] 儲存完成：{today}")
     except Exception as e:
         print(f"[Orchestrator] 儲存失敗: {e}")
+
+    # 步驟5：推送到 Telegram
+    _push_to_telegram(article, drafts)
