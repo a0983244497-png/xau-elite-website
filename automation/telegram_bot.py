@@ -167,16 +167,70 @@ def cmd_key_focus(chat_id):
     _send(chat_id, f"🔍 <b>今日重點關注</b>  {d}\n━━━━━━━━━━━━━━━━━━━━\n\n{result}")
 
 
-def cmd_fun_post(chat_id):
-    """今日趣事：夥伴3 互動幽默型貼文"""
-    m = _market()
-    xdir = "上漲" if m['xau_chg'] > 0 else "下跌"
+def _google_trends_taiwan():
+    """抓取 Google Trends 台灣今日熱搜話題（RSS，免 API key）"""
+    try:
+        import xml.etree.ElementTree as ET
+        r = http.get(
+            "https://trends.google.com/trending/rss?geo=TW",
+            timeout=10,
+            headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
+        )
+        root = ET.fromstring(r.text)
+        topics = []
+        for item in root.findall("./channel/item")[:10]:
+            title = item.findtext("title") or ""
+            if title.strip():
+                topics.append(title.strip())
+        return topics
+    except Exception as e:
+        print(f"[TG Bot] Google Trends 抓取失敗: {e}")
+        return []
 
-    result = _gpt(_P3, f"""今天黃金{xdir} {abs(m['xau_chg']):.2f}%，報 {m['xau']} USD。
-寫一篇「互動幽默型」Threads 貼文：
-- 外匯/黃金投資梗、自嘲幽默、帶生活感
-- 結尾問讀者互動
-- 50~120字，一句一行""", max_tokens=350)
+
+def _ptt_hot_titles():
+    """抓取 PTT 八卦板熱門文章標題"""
+    try:
+        session = http.Session()
+        session.cookies.set("over18", "1", domain="www.ptt.cc")
+        headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
+        r = session.get("https://www.ptt.cc/bbs/Gossiping/index.json", timeout=10, headers=headers)
+        data = r.json()
+        titles = []
+        for post in data.get("items", [])[:25]:
+            title = (post.get("title") or "").strip()
+            if title and not title.startswith("Re:") and not title.startswith("Fw:"):
+                titles.append(title)
+            if len(titles) >= 10:
+                break
+        return titles
+    except Exception as e:
+        print(f"[TG Bot] PTT 抓取失敗: {e}")
+        return []
+
+
+def cmd_fun_post(chat_id):
+    """今日趣事：Google Trends + PTT 熱門話題 → 夥伴3 幽默互動貼文"""
+    trends = _google_trends_taiwan()
+    ptt = _ptt_hot_titles()
+
+    trends_text = "\n".join(f"- {t}" for t in trends) if trends else "（無法取得）"
+    ptt_text = "\n".join(f"- {t}" for t in ptt) if ptt else "（無法取得）"
+
+    result = _gpt(_P3, f"""以下是今日台灣熱門話題：
+
+【Google Trends 台灣熱搜】
+{trends_text}
+
+【PTT 八卦板熱門標題】
+{ptt_text}
+
+請選 1~2 個最有共鳴或最有梗的話題，為外匯講師 Gino 寫一篇 Threads 貼文：
+- 用幽默方式把熱門話題連結到外匯/黃金交易或投資人的日常生活
+- 口語、一句一行、帶笑點與生活感
+- 稱呼讀者「各位」或「脆友們」
+- 結尾用問句邀請互動
+- 50~150字，不構成投資建議""", max_tokens=400)
 
     _send(chat_id, f"😎 <b>今日趣事貼文</b>\n━━━━━━━━━━━━━━━━━━━━\n\n{result}")
 
