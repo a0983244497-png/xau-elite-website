@@ -1471,6 +1471,14 @@ def feed_to_draft():
     except Exception as e:
         return jsonify({"ok":False,"error":str(e)}),500
 
+@app.route('/admin/daily')
+def admin_daily():
+    """後台頁面：密碼驗證後顯示今日 Orchestrator 內容與結構分析"""
+    key = request.args.get('key', '')
+    if key and key != ADMIN_KEY:
+        return jsonify({"ok": False, "error": "密碼錯誤"}), 401
+    return send_from_directory('.', 'admin_daily.html')
+
 @app.route('/<path:path>')
 def serve_file(path): return send_from_directory('.', path)
 
