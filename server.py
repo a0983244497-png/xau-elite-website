@@ -13,6 +13,9 @@ from anthropic import Anthropic
 from openai import OpenAI
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+import io
+import base64
+import urllib.request
 from automation.orchestrator import run_orchestrator, init_orchestrator_tables
 from automation.telegram_bot import handle_update as tg_handle_update
 
@@ -1436,6 +1439,185 @@ def admin_daily():
     if key and key != ADMIN_KEY:
         return jsonify({"ok": False, "error": "密碼錯誤"}), 401
     return send_from_directory('.', 'admin_daily.html')
+
+# ─── 輪播圖生成 (Pillow) ─────────────────────────────────────
+
+try:
+    from PIL import Image, ImageDraw, ImageFont
+    _PIL_OK = True
+except ImportError:
+    _PIL_OK = False
+    print('[Slides] Pillow 未安裝，/api/generate-slides 不可用')
+
+_SL_BG   = (245, 240, 232)  # #F5F0E8
+_SL_DARK = (42, 32, 24)     # #2A2018
+_SL_GOLD = (196, 147, 58)   # #C4933A
+_SL_INK  = (30, 26, 22)     # #1E1A16
+_SL_DIM  = (224, 213, 197)  # 淺色裝飾數字
+
+_sl_font_path = None
+_sl_font_lock = threading.Lock()
+_sl_fonts = {}
+
+def _get_sl_font():
+    global _sl_font_path
+    if _sl_font_path:
+        return _sl_font_path
+    with _sl_font_lock:
+        if _sl_font_path:
+            return _sl_font_path
+        font_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'fonts')
+        local = os.path.join(font_dir, 'NotoSansCJKtc-Regular.otf')
+        if os.path.exists(local):
+            _sl_font_path = local
+            return local
+        for p in ['/System/Library/Fonts/PingFang.ttc',
+                  '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc']:
+            if os.path.exists(p):
+                _sl_font_path = p
+                return p
+        try:
+            os.makedirs(font_dir, exist_ok=True)
+            url = 'https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk@main/Sans/SubsetOTF/TC/NotoSansCJKtc-Regular.otf'
+            print('[Slides] Downloading CJK font...')
+            urllib.request.urlretrieve(url, local)
+            _sl_font_path = local
+            print('[Slides] Font ready')
+        except Exception as e:
+            print(f'[Slides] Font download failed: {e}')
+        return _sl_font_path
+
+def _slft(size):
+    if size not in _sl_fonts:
+        path = _get_sl_font()
+        try:
+            _sl_fonts[size] = ImageFont.truetype(path, size) if path else ImageFont.load_default()
+        except Exception:
+            _sl_fonts[size] = ImageFont.load_default()
+    return _sl_fonts[size]
+
+def _sl_wrap(draw, text, font, max_w):
+    lines, cur = [], ''
+    for ch in str(text):
+        if ch == '\n':
+            lines.append(cur); cur = ''; continue
+        test = cur + ch
+        w = draw.textbbox((0, 0), test, font=font)[2]
+        if w > max_w and cur:
+            lines.append(cur); cur = ch
+        else:
+            cur = test
+    if cur:
+        lines.append(cur)
+    return lines
+
+def _sl_footer(draw, page, total, W=1080, H=1080, M=80):
+    f = _slft(26)
+    sig, num = 'Gino｜yusheng.zhu.14', f'{page:02d}/{total:02d}'
+    draw.line([(M, H - M - 46), (W - M, H - M - 46)], fill=_SL_GOLD, width=1)
+    draw.text((M, H - M - 32), sig, font=f, fill=_SL_GOLD)
+    nw = draw.textbbox((0, 0), num, font=f)[2]
+    draw.text((W - M - nw, H - M - 32), num, font=f, fill=_SL_GOLD)
+
+def _sl_cover(title, subtitle, page, total):
+    W, H, M = 1080, 1080, 80
+    img = Image.new('RGB', (W, H), _SL_BG)
+    d = ImageDraw.Draw(img)
+    d.rectangle([(M, M), (W - M, M + 4)], fill=_SL_GOLD)
+    d.text((M, M + 20), 'XAU ELITE × GINO', font=_slft(20), fill=_SL_GOLD)
+    tf = _slft(64)
+    y = M + 80
+    for line in _sl_wrap(d, title, tf, W - M * 2)[:4]:
+        d.text((M, y), line, font=tf, fill=_SL_INK)
+        y += 80
+    if subtitle:
+        sf = _slft(34)
+        y += 16
+        for line in _sl_wrap(d, subtitle, sf, W - M * 2)[:4]:
+            d.text((M, y), line, font=sf, fill=_SL_GOLD)
+            y += 46
+    _sl_footer(d, page, total)
+    return img
+
+def _sl_content(title, body, page, total):
+    W, H, M = 1080, 1080, 80
+    img = Image.new('RGB', (W, H), _SL_BG)
+    d = ImageDraw.Draw(img)
+    d.text((M - 6, 52), f'{page:02d}', font=_slft(120), fill=_SL_DIM)
+    tf = _slft(52)
+    y = 220
+    for line in _sl_wrap(d, title, tf, W - M * 2)[:2]:
+        d.text((M, y), line, font=tf, fill=_SL_INK)
+        y += 64
+    d.rectangle([(M, y + 6), (M + 56, y + 10)], fill=_SL_GOLD)
+    y += 38
+    bf = _slft(36)
+    for line in _sl_wrap(d, body, bf, W - M * 2)[:10]:
+        d.text((M, y), line, font=bf, fill=_SL_INK)
+        y += 52
+    _sl_footer(d, page, total)
+    return img
+
+def _sl_cta(title, body, page, total):
+    W, H, M = 1080, 1080, 80
+    img = Image.new('RGB', (W, H), _SL_DARK)
+    d = ImageDraw.Draw(img)
+    FM = 48
+    d.rectangle([(FM, FM), (W - FM, H - FM)], outline=_SL_GOLD, width=2)
+    for cx, cy in [(FM+18,FM+18),(W-FM-18,FM+18),(FM+18,H-FM-18),(W-FM-18,H-FM-18)]:
+        d.ellipse([(cx-5,cy-5),(cx+5,cy+5)], fill=_SL_GOLD)
+    tf = _slft(56)
+    t_lines = _sl_wrap(d, title, tf, W - (M + FM) * 2)[:4]
+    y = (H - len(t_lines) * 72) // 2 - 50
+    for line in t_lines:
+        tw = d.textbbox((0, 0), line, font=tf)[2]
+        d.text(((W - tw) // 2, y), line, font=tf, fill=_SL_GOLD)
+        y += 72
+    if body:
+        bf = _slft(34)
+        y += 20
+        for line in _sl_wrap(d, body, bf, W - (M + FM) * 2)[:4]:
+            bw = d.textbbox((0, 0), line, font=bf)[2]
+            d.text(((W - bw) // 2, y), line, font=bf, fill=(255, 255, 255))
+            y += 50
+    _sl_footer(d, page, total)
+    return img
+
+def _sl_b64(img):
+    buf = io.BytesIO()
+    img.save(buf, format='PNG', optimize=True)
+    return base64.b64encode(buf.getvalue()).decode('utf-8')
+
+@app.route('/api/generate-slides', methods=['POST'])
+def generate_slides():
+    """Pillow 1080×1080 輪播圖生成，回傳 base64 PNG（需 X-Admin-Key header）"""
+    if not _PIL_OK:
+        return jsonify({"ok": False, "error": "Pillow 未安裝，請聯繫管理員"}), 500
+    if request.headers.get('X-Admin-Key') != ADMIN_KEY:
+        return jsonify({"ok": False, "error": "未授權"}), 401
+    data = request.json or {}
+    slides_in = data.get('slides', [])
+    if not slides_in:
+        return jsonify({"ok": False, "error": "請提供 slides 資料"}), 400
+    total = len(slides_in)
+    out = []
+    try:
+        for i, s in enumerate(slides_in):
+            pg = i + 1
+            title = str(s.get('title', ''))
+            body = str(s.get('content', '') or s.get('body', ''))
+            stype = s.get('type', 'content')
+            if stype == 'cover' or pg == 1:
+                img = _sl_cover(title, body, pg, total)
+            elif stype == 'cta' or pg == total:
+                img = _sl_cta(title, body, pg, total)
+            else:
+                img = _sl_content(title, body, pg, total)
+            out.append({'index': pg, 'base64': _sl_b64(img), 'filename': f'slide_{pg:02d}.png'})
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
+    return jsonify({"ok": True, "images": out})
 
 @app.route('/tools/post-generator')
 def post_generator():

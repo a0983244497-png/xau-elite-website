@@ -53,6 +53,15 @@
   .copy-btn:hover, .copy-btn.copied { background: var(--gold); color: #fff; }
   .error-box { display: none; background: #fff5f0; border: 1px solid #e0b090; border-radius: 3px; padding: 14px 16px; font-size: 13px; color: #8a4020; margin-top: 12px; line-height: 1.7; }
   .error-box.show { display: block; }
+  .slide-input-card { background: var(--bg); border: 1px solid var(--border); border-radius: 3px; padding: 12px 14px; margin-bottom: 8px; }
+  .slide-input-label { font-size: 10px; letter-spacing: 0.2em; color: var(--gold); text-transform: uppercase; margin-bottom: 8px; display: block; }
+  .slide-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-top: 12px; }
+  .slide-thumb { border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+  .slide-thumb img { width: 100%; display: block; }
+  .slide-dl-btn { width: 100%; padding: 8px; background: transparent; border: none; border-top: 1px solid var(--border); font-family: 'Noto Sans TC', sans-serif; font-size: 12px; color: var(--gold); cursor: pointer; transition: all 0.15s; }
+  .slide-dl-btn:hover { background: var(--gold); color: #fff; }
+  .dl-all-btn { width: 100%; padding: 14px; background: var(--dark); color: var(--gold); border: none; border-radius: 3px; font-family: 'Noto Serif TC', serif; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 12px; letter-spacing: 0.12em; transition: opacity 0.15s; }
+  .dl-all-btn:hover { opacity: 0.85; }
 </style>
 </head>
 <body>
@@ -125,6 +134,24 @@
   <div id="resultsContainer"></div>
 </div>
 
+<div id="slideSection" style="display:none;">
+  <div class="card">
+    <span class="field-label">輪播圖文字設定（5張）</span>
+    <div id="slideInputs"></div>
+    <button class="gen-btn" id="slideGenBtn" style="margin-top:12px;" onclick="generateSlides()">🖼️ 產生輪播圖片</button>
+    <div class="error-box" id="slideErrBox"></div>
+  </div>
+  <div class="loading" id="slideLoading">
+    <div><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div>
+    <p>圖片生成中，請稍候...</p>
+  </div>
+  <div id="slideOutput" style="display:none;">
+    <div class="output-header" style="margin-top:16px;"><span>輪播圖預覽</span></div>
+    <div class="slide-grid" id="slideGrid"></div>
+    <button class="dl-all-btn" onclick="downloadAllSlides()">📦 一鍵下載全部圖片</button>
+  </div>
+</div>
+
 <script>
   let selectedType = '溫馨提醒';
   let selectedCount = 3;
@@ -165,6 +192,7 @@
   document.getElementById('resetBtn').addEventListener('click', () => {
     document.getElementById('outputArea').classList.remove('show');
     document.getElementById('errorBox').classList.remove('show');
+    document.getElementById('slideSection').style.display = 'none';
   });
 
   document.getElementById('genBtn').addEventListener('click', generatePost);
@@ -280,6 +308,7 @@
 
       document.getElementById('outputArea').classList.add('show');
       document.getElementById('outputArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (selectedType === '輪播貼文') { showSlideSection(versions); }
 
     } catch (err) {
       document.getElementById('loading').classList.remove('show');
@@ -304,6 +333,103 @@
 
   function escapeHtml(str) {
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }
+
+  // ─── 輪播圖 ───────────────────────────────────────────────
+
+  let slideImages = [];
+  const SLIDE_LABELS = ['01 封面', '02 共鳴', '03 故事', '04 專業', '05 CTA'];
+  const SLIDE_TYPES  = ['cover', 'content', 'content', 'content', 'cta'];
+
+  function parseCarouselToSlides(text) {
+    const byHeader = text.split(/(?=【[^】]+】)/).filter(s => s.trim());
+    if (byHeader.length >= 5) {
+      return byHeader.slice(0, 5).map(s => s.replace(/^【[^】]*】\s*/, '').trim());
+    }
+    const byBlank = text.split(/\n{2,}/).filter(s => s.trim().length > 3);
+    if (byBlank.length >= 5) return byBlank.slice(0, 5).map(s => s.trim());
+    const lines = text.split('\n').filter(l => l.trim());
+    const sz = Math.max(1, Math.ceil(lines.length / 5));
+    return Array.from({length: 5}, (_, i) => lines.slice(i * sz, (i + 1) * sz).join('\n'));
+  }
+
+  function initSlideInputs(contents) {
+    const container = document.getElementById('slideInputs');
+    container.innerHTML = '';
+    for (let i = 0; i < 5; i++) {
+      const div = document.createElement('div');
+      div.className = 'slide-input-card';
+      div.innerHTML = `<span class="slide-input-label">${SLIDE_LABELS[i]}</span><textarea id="slideText${i}" style="min-height:56px;font-size:13px;">${(contents[i] || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>`;
+      container.appendChild(div);
+    }
+  }
+
+  function showSlideSection(versions) {
+    const parts = parseCarouselToSlides(versions[0] || '');
+    initSlideInputs(parts);
+    document.getElementById('slideSection').style.display = 'block';
+    document.getElementById('slideOutput').style.display = 'none';
+    document.getElementById('slideGrid').innerHTML = '';
+    document.getElementById('slideErrBox').classList.remove('show');
+    setTimeout(() => document.getElementById('slideSection').scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
+  }
+
+  async function generateSlides() {
+    const slides = Array.from({length: 5}, (_, i) => {
+      const text = (document.getElementById(`slideText${i}`)?.value || '').trim();
+      const lines = text.split('\n').filter(l => l.trim());
+      return { type: SLIDE_TYPES[i], title: lines[0] || '', content: lines.slice(1).join('\n') };
+    });
+    document.getElementById('slideErrBox').classList.remove('show');
+    document.getElementById('slideOutput').style.display = 'none';
+    document.getElementById('slideLoading').classList.add('show');
+    document.getElementById('slideGenBtn').disabled = true;
+
+    const adminKey = new URLSearchParams(window.location.search).get('key') || '';
+    try {
+      const resp = await fetch('/api/generate-slides', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
+        body: JSON.stringify({ slides })
+      });
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error);
+      slideImages = data.images;
+      renderSlidePreview(data.images);
+      document.getElementById('slideOutput').style.display = 'block';
+      document.getElementById('slideOutput').scrollIntoView({ behavior: 'smooth' });
+    } catch (err) {
+      const box = document.getElementById('slideErrBox');
+      box.textContent = '圖片生成失敗：' + err.message;
+      box.classList.add('show');
+    } finally {
+      document.getElementById('slideLoading').classList.remove('show');
+      document.getElementById('slideGenBtn').disabled = false;
+    }
+  }
+
+  function renderSlidePreview(images) {
+    const grid = document.getElementById('slideGrid');
+    grid.innerHTML = '';
+    images.forEach((img, i) => {
+      const div = document.createElement('div');
+      div.className = 'slide-thumb';
+      div.innerHTML = `<img src="data:image/png;base64,${img.base64}" alt="Slide ${img.index}"><button class="slide-dl-btn" onclick="downloadSlide(${i})">⬇ 第 ${img.index} 張</button>`;
+      grid.appendChild(div);
+    });
+  }
+
+  function downloadSlide(i) {
+    const img = slideImages[i];
+    if (!img) return;
+    const a = document.createElement('a');
+    a.href = 'data:image/png;base64,' + img.base64;
+    a.download = img.filename;
+    a.click();
+  }
+
+  function downloadAllSlides() {
+    slideImages.forEach((_, i) => setTimeout(() => downloadSlide(i), i * 150));
   }
 </script>
 </body>
