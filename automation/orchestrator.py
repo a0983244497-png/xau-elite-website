@@ -8,6 +8,7 @@ import json
 import urllib.parse
 from datetime import datetime
 
+import requests
 import pg8000.native
 import yfinance as yf
 from openai import OpenAI
