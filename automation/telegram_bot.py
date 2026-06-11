@@ -6,6 +6,7 @@ import os
 import threading
 import requests as http
 from datetime import datetime
+import yfinance as yf
 from openai import OpenAI
 
 # ─── 基礎工具 ──────────────────────────────────────────────
@@ -45,27 +46,38 @@ def _gpt(system, user, max_tokens=800):
         return f"（AI 生成失敗：{e}）"
 
 def _market():
-    """用 Twelve Data 取得 XAU/USD 與 DXY 即時報價"""
-    key = os.environ.get("TWELVE_DATA_KEY")
-    if not key:
-        return {"xau": 0, "xau_chg": 0, "dxy": 0, "dxy_chg": 0}
+    """XAU/USD 從 Twelve Data 抓取；DXY 從 yfinance（Twelve Data 不支援此 symbol）"""
+    td_key = os.environ.get("TWELVE_DATA_KEY")
+
+    xau_p, xau_c = 0.0, 0.0
+    if not td_key:
+        print("[TG Bot] TWELVE_DATA_KEY 未設定，XAU/USD 將為 0")
+    else:
+        try:
+            r = http.get(
+                f"https://api.twelvedata.com/quote?symbol=XAU/USD&apikey={td_key}",
+                timeout=10
+            )
+            d = r.json()
+            if d.get("status") == "error" or d.get("code"):
+                print(f"[TG Bot] Twelve Data XAU/USD 錯誤: {d}")
+            else:
+                xau_p = round(float(d.get("close") or 0), 2)
+                xau_c = round(float(d.get("percent_change") or 0), 2)
+                if xau_p == 0:
+                    print(f"[TG Bot] Twelve Data XAU/USD 回傳 0，完整回應: {d}")
+        except Exception as e:
+            print(f"[TG Bot] Twelve Data XAU/USD 例外: {e}")
+
+    dxy_p, dxy_c = 0.0, 0.0
     try:
-        r = http.get(
-            f"https://api.twelvedata.com/quote?symbol=XAU/USD,DXY&apikey={key}",
-            timeout=10
-        )
-        d = r.json()
-        xau = d.get("XAU/USD", {})
-        dxy = d.get("DXY", {})
-        return {
-            "xau": round(float(xau.get("close") or 0), 2),
-            "xau_chg": round(float(xau.get("percent_change") or 0), 2),
-            "dxy": round(float(dxy.get("close") or 0), 3),
-            "dxy_chg": round(float(dxy.get("percent_change") or 0), 3),
-        }
+        di = yf.Ticker("DX-Y.NYB").fast_info
+        dxy_p = round(di.last_price, 3)
+        dxy_c = round(((di.last_price - di.previous_close) / di.previous_close) * 100, 3)
     except Exception as e:
-        print(f"[TG Bot] Twelve Data 失敗: {e}")
-        return {"xau": 0, "xau_chg": 0, "dxy": 0, "dxy_chg": 0}
+        print(f"[TG Bot] yfinance DXY 例外: {e}")
+
+    return {"xau": xau_p, "xau_chg": xau_c, "dxy": dxy_p, "dxy_chg": dxy_c}
 
 def _today():
     return datetime.now().strftime("%Y年%m月%d日")

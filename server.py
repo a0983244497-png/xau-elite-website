@@ -114,9 +114,10 @@ except Exception as e:
 # ─── 市場數據 ─────────────────────────────────────────────
 
 def fetch_gold_price():
-    """用 Twelve Data 抓取 XAU/USD 即時報價，回傳 (price, change, change_pct)"""
+    """XAU/USD 從 Twelve Data，回傳 (price, change, change_pct)"""
     key = TWELVE_DATA_KEY
     if not key:
+        print("TWELVE_DATA_KEY 未設定")
         return 0, 0, 0
     try:
         r = requests.get(
@@ -124,40 +125,35 @@ def fetch_gold_price():
             timeout=10
         )
         d = r.json()
-        if d.get("status") == "error":
-            print(f"Twelve Data XAU 錯誤: {d.get('message')}")
+        if d.get("status") == "error" or d.get("code"):
+            print(f"Twelve Data XAU/USD 錯誤: {d}")
             return 0, 0, 0
         price = round(float(d.get("close") or 0), 2)
         change = round(float(d.get("change") or 0), 2)
         change_pct = round(float(d.get("percent_change") or 0), 2)
+        if price == 0:
+            print(f"Twelve Data XAU/USD 回傳 0，完整回應: {d}")
         return price, change, change_pct
     except Exception as e:
-        print(f"Twelve Data XAU 失敗: {e}")
+        print(f"Twelve Data XAU/USD 例外: {e}")
         return 0, 0, 0
 
 def fetch_market_data_yfinance():
-    """用 Twelve Data 抓取 XAU/USD 與 DXY 即時報價"""
-    key = TWELVE_DATA_KEY
-    if not key:
-        return {"xau_price": 0, "xau_change_pct": 0, "dxy_price": 0, "dxy_change_pct": 0}
+    """XAU/USD 從 Twelve Data；DXY 從 yfinance（Twelve Data 不支援 DXY symbol）"""
+    price, change, change_pct = fetch_gold_price()
+    dxy_price, dxy_chg = 0.0, 0.0
     try:
-        r = requests.get(
-            f"https://api.twelvedata.com/quote?symbol=XAU/USD,DXY&apikey={key}",
-            timeout=10
-        )
-        d = r.json()
-        xau = d.get("XAU/USD", {})
-        dxy = d.get("DXY", {})
-        return {
-            "xau_price": round(float(xau.get("close") or 0), 2),
-            "xau_change_pct": round(float(xau.get("percent_change") or 0), 2),
-            "dxy_price": round(float(dxy.get("close") or 0), 3),
-            "dxy_change_pct": round(float(dxy.get("percent_change") or 0), 3),
-        }
+        di = yf.Ticker("DX-Y.NYB").fast_info
+        dxy_price = round(di.last_price, 3)
+        dxy_chg = round(((di.last_price - di.previous_close) / di.previous_close) * 100, 3)
     except Exception as e:
-        print(f"Twelve Data 批次失敗: {e}")
-        price, _, change_pct = fetch_gold_price()
-        return {"xau_price": price, "xau_change_pct": change_pct, "dxy_price": 0, "dxy_change_pct": 0}
+        print(f"yfinance DXY 例外: {e}")
+    return {
+        "xau_price": price,
+        "xau_change_pct": change_pct,
+        "dxy_price": dxy_price,
+        "dxy_change_pct": dxy_chg,
+    }
 
 # ─── Claude API ───────────────────────────────────────────
 
@@ -658,30 +654,11 @@ def gold_price():
 @app.route('/api/ticker', methods=['GET'])
 def get_ticker_data():
     result = {}
-    # XAU/USD 和 DXY 從 Twelve Data 抓取
-    td_key = TWELVE_DATA_KEY
-    if td_key:
-        try:
-            r = requests.get(
-                f"https://api.twelvedata.com/quote?symbol=XAU/USD,DXY&apikey={td_key}",
-                timeout=10
-            )
-            d = r.json()
-            for label, sym in [('XAU', 'XAU/USD'), ('DXY', 'DXY')]:
-                q = d.get(sym, {})
-                result[label] = {
-                    'price': round(float(q.get('close') or 0), 2),
-                    'change': round(float(q.get('change') or 0), 2),
-                    'change_pct': round(float(q.get('percent_change') or 0), 2),
-                }
-        except:
-            result['XAU'] = {'price': 0, 'change': 0, 'change_pct': 0}
-            result['DXY'] = {'price': 0, 'change': 0, 'change_pct': 0}
-    else:
-        result['XAU'] = {'price': 0, 'change': 0, 'change_pct': 0}
-        result['DXY'] = {'price': 0, 'change': 0, 'change_pct': 0}
-    # BTC 和 US100 保留 yfinance
-    for name, sym in [('BTC', 'BTC-USD'), ('US100', '^NDX')]:
+    # XAU 從 Twelve Data
+    xau_price, xau_change, xau_pct = fetch_gold_price()
+    result['XAU'] = {'price': xau_price, 'change': xau_change, 'change_pct': xau_pct}
+    # DXY、BTC、US100 從 yfinance
+    for name, sym in [('DXY', 'DX-Y.NYB'), ('BTC', 'BTC-USD'), ('US100', '^NDX')]:
         try:
             fi = yf.Ticker(sym).fast_info
             price = fi.last_price
@@ -1081,26 +1058,8 @@ def trigger_orchestrator():
 @app.route('/api/macro_prices', methods=['GET'])
 def get_macro_prices():
     result = {}
-    # DXY 從 Twelve Data 抓取
-    td_key = TWELVE_DATA_KEY
-    if td_key:
-        try:
-            r = requests.get(
-                f"https://api.twelvedata.com/quote?symbol=DXY&apikey={td_key}",
-                timeout=10
-            )
-            d = r.json()
-            result['DXY'] = {
-                'price': round(float(d.get('close') or 0), 3),
-                'change': round(float(d.get('change') or 0), 3),
-                'change_pct': round(float(d.get('percent_change') or 0), 2),
-            }
-        except:
-            result['DXY'] = {'price': 0, 'change': 0, 'change_pct': 0}
-    else:
-        result['DXY'] = {'price': 0, 'change': 0, 'change_pct': 0}
-    # VIX, US10Y, US2Y 保留 yfinance
-    for name, sym in [('VIX', '^VIX'), ('US10Y', '^TNX'), ('US2Y', '^IRX')]:
+    # DXY、VIX、US10Y、US2Y 全部從 yfinance（Twelve Data 不支援 DXY）
+    for name, sym in [('DXY', 'DX-Y.NYB'), ('VIX', '^VIX'), ('US10Y', '^TNX'), ('US2Y', '^IRX')]:
         try:
             fi = yf.Ticker(sym).fast_info
             price = fi.last_price

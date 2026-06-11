@@ -10,6 +10,7 @@ from datetime import datetime
 
 import requests
 import pg8000.native
+import yfinance as yf
 from openai import OpenAI
 
 # ─── DB 連線 ───────────────────────────────────────────────
@@ -117,28 +118,45 @@ Threads 帳號：yusheng.zhu.14
 # ─── 市場數據抓取 ─────────────────────────────────────────
 
 def _fetch_market_data():
-    """用 Twelve Data 抓取 XAU/USD 與 DXY 即時報價"""
-    key = os.environ.get("TWELVE_DATA_KEY")
-    if not key:
-        print("[Orchestrator] TWELVE_DATA_KEY 未設定")
-        return {"xau_price": 0, "xau_change_pct": 0, "dxy_price": 0, "dxy_change_pct": 0}
+    """XAU/USD 從 Twelve Data 抓取；DXY 從 yfinance（Twelve Data 不支援此 symbol）"""
+    td_key = os.environ.get("TWELVE_DATA_KEY")
+
+    # ── XAU/USD via Twelve Data ──
+    xau_price, xau_chg = 0.0, 0.0
+    if not td_key:
+        print("[Orchestrator] TWELVE_DATA_KEY 未設定，XAU/USD 將為 0")
+    else:
+        try:
+            r = requests.get(
+                f"https://api.twelvedata.com/quote?symbol=XAU/USD&apikey={td_key}",
+                timeout=10
+            )
+            d = r.json()
+            if d.get("status") == "error" or d.get("code"):
+                print(f"[Orchestrator] Twelve Data XAU/USD 錯誤: {d}")
+            else:
+                xau_price = round(float(d.get("close") or 0), 2)
+                xau_chg = round(float(d.get("percent_change") or 0), 2)
+                if xau_price == 0:
+                    print(f"[Orchestrator] Twelve Data XAU/USD 回傳 0，完整回應: {d}")
+        except Exception as e:
+            print(f"[Orchestrator] Twelve Data XAU/USD 例外: {e}")
+
+    # ── DXY via yfinance（Twelve Data 無此品種）──
+    dxy_price, dxy_chg = 0.0, 0.0
     try:
-        r = requests.get(
-            f"https://api.twelvedata.com/quote?symbol=XAU/USD,DXY&apikey={key}",
-            timeout=10
-        )
-        d = r.json()
-        xau = d.get("XAU/USD", {})
-        dxy = d.get("DXY", {})
-        return {
-            "xau_price": round(float(xau.get("close") or 0), 2),
-            "xau_change_pct": round(float(xau.get("percent_change") or 0), 2),
-            "dxy_price": round(float(dxy.get("close") or 0), 3),
-            "dxy_change_pct": round(float(dxy.get("percent_change") or 0), 3),
-        }
+        di = yf.Ticker("DX-Y.NYB").fast_info
+        dxy_price = round(di.last_price, 3)
+        dxy_chg = round(((di.last_price - di.previous_close) / di.previous_close) * 100, 3)
     except Exception as e:
-        print(f"[Orchestrator] Twelve Data 抓取失敗: {e}")
-        return {"xau_price": 0, "xau_change_pct": 0, "dxy_price": 0, "dxy_change_pct": 0}
+        print(f"[Orchestrator] yfinance DXY 例外: {e}")
+
+    return {
+        "xau_price": xau_price,
+        "xau_change_pct": xau_chg,
+        "dxy_price": dxy_price,
+        "dxy_change_pct": dxy_chg,
+    }
 
 # ─── 夥伴4：生成市場分析文章 ─────────────────────────────
 
