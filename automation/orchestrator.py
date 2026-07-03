@@ -26,7 +26,7 @@ def _get_db():
 # ─── 建表（初始化時呼叫） ─────────────────────────────────
 
 def init_orchestrator_tables():
-    """建立 Orchestrator 專用的兩張表，如果已存在則跳過"""
+    """建立 Orchestrator 專用資料表，如果已存在則跳過"""
     conn = _get_db()
     # 夥伴4 產出：結構化市場分析文章（每日一篇）
     conn.run("""CREATE TABLE IF NOT EXISTS orchestrator_articles (
@@ -53,7 +53,27 @@ def init_orchestrator_tables():
         is_published BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )""")
+    # 執行日誌
+    conn.run("""CREATE TABLE IF NOT EXISTS orchestrator_logs (
+        id SERIAL PRIMARY KEY,
+        task_name VARCHAR(100) NOT NULL,
+        status VARCHAR(20) NOT NULL,
+        message TEXT,
+        executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )""")
     print("Orchestrator 資料表初始化完成")
+
+
+def _write_log(task_name, status, message):
+    """寫入 orchestrator_logs，失敗不中斷主流程"""
+    try:
+        conn = _get_db()
+        conn.run(
+            "INSERT INTO orchestrator_logs (task_name, status, message) VALUES (:task_name, :status, :message)",
+            task_name=task_name, status=status, message=message
+        )
+    except Exception as e:
+        print(f"[Orchestrator] 寫入日誌失敗: {e}")
 
 # ─── 夥伴4 系統提示詞 ─────────────────────────────────────
 
@@ -367,7 +387,9 @@ def run_orchestrator():
     # 步驟2：夥伴4 生成分析文章
     article = _run_partner4(market_data)
     if not article:
-        print("[Orchestrator] 夥伴4失敗，中止流程")
+        msg = "夥伴4文章生成失敗，中止流程"
+        print(f"[Orchestrator] {msg}")
+        _write_log("orchestrator_daily", "fail", msg)
         return
 
     print(f"[Orchestrator] 夥伴4完成：{article.get('title', '')}")
@@ -384,7 +406,17 @@ def run_orchestrator():
             _save_social_drafts(conn, today, drafts)
         print(f"[Orchestrator] 儲存完成：{today}")
     except Exception as e:
-        print(f"[Orchestrator] 儲存失敗: {e}")
+        err = f"儲存失敗: {e}"
+        print(f"[Orchestrator] {err}")
+        _write_log("orchestrator_daily", "fail", err)
+        return
 
     # 步驟5：推送到 Telegram
     _push_to_telegram(article, drafts)
+
+    # 步驟6：寫入執行日誌
+    _write_log(
+        "orchestrator_daily",
+        "success",
+        f"XAU={market_data['xau_price']} | 文章：{article.get('title','')} | 草稿：{len(drafts)} 個"
+    )

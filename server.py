@@ -1440,6 +1440,39 @@ def admin_daily():
         return jsonify({"ok": False, "error": "密碼錯誤"}), 401
     return send_from_directory('.', 'admin_daily.html')
 
+@app.route('/admin/logs')
+def admin_logs():
+    """後台頁面：Orchestrator 執行日誌"""
+    key = request.args.get('key', '')
+    if key and key != ADMIN_KEY:
+        return jsonify({"ok": False, "error": "密碼錯誤"}), 401
+    return send_from_directory('.', 'admin_logs.html')
+
+@app.route('/api/admin/orchestrator-logs')
+def api_orchestrator_logs():
+    """取得最近 100 筆 Orchestrator 執行日誌"""
+    key = request.args.get('key', request.headers.get('X-Admin-Key', ''))
+    if key != ADMIN_KEY:
+        return jsonify({"ok": False, "error": "未授權"}), 401
+    try:
+        conn = get_db()
+        rows = conn.run(
+            "SELECT id, task_name, status, message, executed_at FROM orchestrator_logs ORDER BY executed_at DESC LIMIT 100"
+        )
+        logs = [
+            {
+                "id": r[0],
+                "task_name": r[1],
+                "status": r[2],
+                "message": r[3],
+                "executed_at": r[4].isoformat() if r[4] else None
+            }
+            for r in rows
+        ]
+        return jsonify({"ok": True, "logs": logs})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 # ─── 輪播圖生成 (Pillow) ─────────────────────────────────────
 
 try:

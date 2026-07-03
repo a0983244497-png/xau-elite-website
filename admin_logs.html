@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XAU Elite | 後台 · 執行日誌</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans+TC:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:#c9a84c; --gold-light:#e8c97a; --gold-dim:rgba(201,168,76,0.15);
+  --bg:#080b12; --bg2:#0d1220; --bg3:#111827; --bg4:#161d2e;
+  --border:rgba(201,168,76,0.2); --border2:rgba(255,255,255,0.06);
+  --text:#e8eaf0; --text-dim:#6b7a99; --text-muted:#3d4a66;
+  --green:#34d399; --red:#f87171; --blue:#60a5fa;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 50% at 15% 15%,rgba(201,168,76,0.04),transparent 60%);pointer-events:none;z-index:0;}
+
+/* ── LOGIN ── */
+#loginOverlay{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center;}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:48px 40px;width:360px;max-width:90vw;text-align:center;}
+.login-logo{font-family:'Playfair Display',serif;font-size:24px;color:var(--gold);letter-spacing:2px;margin-bottom:6px;}
+.login-sub{font-size:12px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;margin-bottom:32px;}
+.login-label{display:block;font-size:12px;color:var(--text-dim);text-align:left;margin-bottom:8px;}
+.login-input{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:12px 16px;color:var(--text);font-size:14px;font-family:'IBM Plex Mono',monospace;outline:none;transition:border-color .2s;}
+.login-input:focus{border-color:var(--gold);}
+.login-btn{width:100%;margin-top:16px;padding:13px;background:var(--gold-dim);border:1px solid var(--border);border-radius:8px;color:var(--gold);font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer;letter-spacing:1px;transition:background .2s;}
+.login-btn:hover{background:rgba(201,168,76,0.28);}
+.login-error{margin-top:12px;font-size:12px;color:var(--red);min-height:18px;}
+
+/* ── TOP NAV ── */
+header{position:sticky;top:0;z-index:100;background:rgba(8,11,18,0.94);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;gap:16px;}
+.h-logo{font-family:'Playfair Display',serif;font-size:18px;color:var(--gold);letter-spacing:2px;text-decoration:none;}
+.h-logo span{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);font-weight:400;margin-left:8px;}
+.h-nav{display:flex;gap:4px;margin-left:auto;}
+.h-nav-link{padding:6px 12px;border-radius:6px;font-size:12px;color:var(--text-dim);text-decoration:none;transition:color .15s,background .15s;}
+.h-nav-link:hover{color:var(--gold);background:var(--gold-dim);}
+.h-refresh{padding:7px 14px;background:var(--gold-dim);border:1px solid var(--border);border-radius:7px;color:var(--gold);font-size:12px;font-weight:600;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:background .2s;}
+.h-refresh:hover{background:rgba(201,168,76,0.3);}
+
+/* ── LAYOUT ── */
+main{max-width:960px;margin:0 auto;padding:28px 20px 60px;position:relative;z-index:1;}
+
+/* ── SECTION HEADER ── */
+.sec-head{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.sec-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:rgba(201,168,76,0.12);}
+.sec-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:#f0f4ff;}
+.sec-sub{font-size:12px;color:var(--text-dim);margin-left:auto;font-family:'IBM Plex Mono',monospace;}
+.sec-sep{height:1px;background:var(--border2);margin-bottom:20px;}
+
+/* ── STATS ROW ── */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+@media(max-width:600px){.stats-row{grid-template-columns:1fr 1fr;}}
+.stat-box{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:16px 18px;}
+.stat-label{font-size:11px;color:var(--text-dim);letter-spacing:.04em;margin-bottom:6px;}
+.stat-val{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:var(--gold);}
+.stat-val.green{color:var(--green);}
+.stat-val.red{color:var(--red);}
+
+/* ── LOG TABLE ── */
+.log-table{width:100%;border-collapse:collapse;}
+.log-table th{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;padding:0 14px 10px;text-align:left;border-bottom:1px solid var(--border2);}
+.log-table td{padding:12px 14px;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.03);vertical-align:top;}
+.log-table tr:last-child td{border-bottom:none;}
+.log-table tr:hover td{background:rgba(255,255,255,0.02);}
+.badge-success{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;font-family:'IBM Plex Mono',monospace;background:rgba(52,211,153,0.1);color:var(--green);border:1px solid rgba(52,211,153,0.2);}
+.badge-fail{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;font-family:'IBM Plex Mono',monospace;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.2);}
+.log-time{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);white-space:nowrap;}
+.log-msg{font-size:12px;color:var(--text-dim);line-height:1.5;max-width:420px;}
+.log-task{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--blue);}
+.empty-state{text-align:center;padding:48px 20px;color:var(--text-muted);}
+.empty-icon{font-size:32px;margin-bottom:12px;opacity:.4;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+</style>
+</head>
+<body>
+
+<div id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">XAU ELITE</div>
+    <div class="login-sub">ORCHESTRATOR LOGS</div>
+    <label class="login-label">管理員密碼</label>
+    <input id="pwInput" class="login-input" type="password" placeholder="輸入密碼" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">進入後台</button>
+    <div class="login-error" id="loginErr"></div>
+  </div>
+</div>
+
+<header>
+  <a href="/admin/daily" class="h-logo">XAU ELITE <span>ADMIN</span></a>
+  <nav class="h-nav">
+    <a class="h-nav-link" href="/admin/daily">今日內容</a>
+    <a class="h-nav-link" href="/admin/logs" style="color:var(--gold);background:var(--gold-dim);">執行日誌</a>
+  </nav>
+  <button class="h-refresh" onclick="loadLogs()">重新整理</button>
+</header>
+
+<main>
+  <div class="sec-head">
+    <div class="sec-icon">📋</div>
+    <div class="sec-title">Orchestrator 執行日誌</div>
+    <div class="sec-sub" id="logCount">載入中…</div>
+  </div>
+  <div class="sec-sep"></div>
+
+  <div class="stats-row" id="statsRow">
+    <div class="stat-box"><div class="stat-label">總執行次數</div><div class="stat-val" id="statTotal">—</div></div>
+    <div class="stat-box"><div class="stat-label">成功次數</div><div class="stat-val green" id="statSuccess">—</div></div>
+    <div class="stat-box"><div class="stat-label">失敗次數</div><div class="stat-val red" id="statFail">—</div></div>
+  </div>
+
+  <div class="card">
+    <table class="log-table">
+      <thead>
+        <tr>
+          <th>時間</th>
+          <th>任務</th>
+          <th>狀態</th>
+          <th>訊息</th>
+        </tr>
+      </thead>
+      <tbody id="logBody">
+        <tr><td colspan="4"><div class="empty-state"><div class="empty-icon">⏳</div>載入中…</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+let adminKey = '';
+
+function doLogin() {
+  const pw = document.getElementById('pwInput').value.trim();
+  if (!pw) return;
+  adminKey = pw;
+  loadLogs();
+}
+
+async function loadLogs() {
+  try {
+    const resp = await fetch(`/api/admin/orchestrator-logs?key=${encodeURIComponent(adminKey)}`);
+    const data = await resp.json();
+    if (!data.ok) {
+      document.getElementById('loginErr').textContent = '密碼錯誤';
+      adminKey = '';
+      return;
+    }
+    document.getElementById('loginOverlay').style.display = 'none';
+    renderLogs(data.logs);
+  } catch(e) {
+    document.getElementById('loginErr').textContent = '連線失敗，請重試';
+  }
+}
+
+function renderLogs(logs) {
+  const total = logs.length;
+  const success = logs.filter(l => l.status === 'success').length;
+  const fail = total - success;
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statSuccess').textContent = success;
+  document.getElementById('statFail').textContent = fail;
+  document.getElementById('logCount').textContent = `最近 ${total} 筆`;
+
+  const tbody = document.getElementById('logBody');
+  if (!total) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📭</div>尚無執行記錄</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = logs.map(l => {
+    const dt = l.executed_at ? new Date(l.executed_at) : null;
+    const timeStr = dt ? dt.toLocaleString('zh-TW', {timeZone:'Asia/Taipei', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit'}) : '—';
+    const badge = l.status === 'success'
+      ? `<span class="badge-success">✓ 成功</span>`
+      : `<span class="badge-fail">✗ 失敗</span>`;
+    return `<tr>
+      <td><div class="log-time">${timeStr}</div></td>
+      <td><span class="log-task">${l.task_name}</span></td>
+      <td>${badge}</td>
+      <td><div class="log-msg">${l.message || '—'}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+// 頁面載入時自動嘗試從 URL 取得 key
+const urlKey = new URLSearchParams(location.search).get('key');
+if (urlKey) { adminKey = urlKey; loadLogs(); }
+</script>
+</body>
+</html>
