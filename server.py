@@ -1058,6 +1058,41 @@ def trigger_orchestrator():
     threading.Thread(target=run_orchestrator, daemon=True).start()
     return jsonify({"ok": True, "message": "Orchestrator 已啟動，請稍候幾分鐘後查詢 /api/daily-content"})
 
+@app.route('/api/orchestrator/send-image', methods=['POST'])
+def trigger_send_image():
+    """手動觸發今日市場圖文推送到 Telegram（需 Admin Key）"""
+    from automation.orchestrator import _build_market_image, _tg_send_photo, _fetch_market_data
+    if request.headers.get('X-Admin-Key') != ADMIN_KEY:
+        return jsonify({"ok": False, "error": "未授權"}), 401
+    try:
+        conn = get_db()
+        today = datetime.now().strftime('%Y-%m-%d')
+        rows = conn.run(
+            "SELECT title, key_levels, gino_strategy, xau_price, dxy_price FROM orchestrator_articles WHERE date = :d ORDER BY id DESC LIMIT 1",
+            d=today
+        )
+        if not rows:
+            return jsonify({"ok": False, "error": f"今日（{today}）尚無 orchestrator_articles 資料，請先觸發 Orchestrator"})
+        r = rows[0]
+        article = {"title": r[0], "key_levels": r[1], "gino_strategy": r[2]}
+        market_data = {"xau_price": r[3] or 0, "xau_change_pct": 0, "dxy_price": r[4] or 0, "dxy_change_pct": 0}
+        try:
+            live = _fetch_market_data()
+            market_data["xau_change_pct"] = live["xau_change_pct"]
+            market_data["dxy_change_pct"] = live["dxy_change_pct"]
+        except Exception:
+            pass
+        img_buf = _build_market_image(article, market_data)
+        caption = (
+            f"📊 <b>{article['title']}</b>\n\n"
+            f"🎯 {article['key_levels']}\n\n"
+            f"⚡ {article['gino_strategy']}"
+        )
+        ok = _tg_send_photo(img_buf, caption)
+        return jsonify({"ok": ok, "message": "圖文已推送" if ok else "推送失敗，請檢查 Telegram 環境變數"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 @app.route('/api/macro_prices', methods=['GET'])
 def get_macro_prices():
     result = {}
